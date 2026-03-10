@@ -220,8 +220,8 @@ function Studio() {
           {step === 'input' && (
             <div className="max-w-2xl mx-auto">
               <div className="text-center mb-12">
-                <h1 className="text-4xl font-bold mb-4">What song do you want?</h1>
-                <p className="text-zinc-600 dark:text-zinc-400">Describe your song idea and we'll generate lyrics for you</p>
+                <h1 className="text-4xl font-bold mb-4">Create your jam</h1>
+                <p className="text-zinc-600 dark:text-zinc-400">Give us the spark, we'll write the fire</p>
               </div>
 
               <div className="space-y-6">

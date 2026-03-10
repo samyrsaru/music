@@ -27,22 +27,46 @@ In your arms, I wish to forever stay.`
 
 const EXAMPLE_PROMPT = "Jazz, Smooth Jazz, Romantic, Dreamy"
 
+interface ModelConstraints {
+  lyrics: { min: number; max: number }
+  prompt: { min: number; max: number }
+}
+
+// Generation modes - ready for instrumental support later
+const GENERATION_MODES = {
+  LYRICS: 'lyrics',
+  INSTRUMENTAL: 'instrumental'
+} as const
+
 function Studio() {
-  const { userId } = useAuth()
+  const { userId, isLoaded } = useAuth()
+  const [mode, setMode] = useState<typeof GENERATION_MODES[keyof typeof GENERATION_MODES]>(GENERATION_MODES.LYRICS)
   const [lyrics, setLyrics] = useState(EXAMPLE_LYRICS)
   const [prompt, setPrompt] = useState(EXAMPLE_PROMPT)
   const [isGenerating, setIsGenerating] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [credits, setCredits] = useState(0)
+  const [constraints, setConstraints] = useState<ModelConstraints | null>(null)
+  
+  // Lyrics helper state
+  const [showLyricsHelper, setShowLyricsHelper] = useState(false)
+  const [lyricsTopic, setLyricsTopic] = useState('')
+  const [lyricsMood, setLyricsMood] = useState('')
+  const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false)
 
   useEffect(() => {
-    if (userId) fetchStatus()
-  }, [userId])
+    // Only fetch when auth is loaded to avoid race conditions
+    if (isLoaded && userId) {
+      fetchStatus()
+      fetchConstraints()
+    }
+  }, [isLoaded, userId])
 
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/subscription/status')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setCredits(data.credits)
     } catch (err) {
@@ -50,9 +74,52 @@ function Studio() {
     }
   }
 
+  const fetchConstraints = async () => {
+    try {
+      const res = await fetch('/api/generations/config')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      setConstraints(data.constraints)
+    } catch (err) {
+      console.error('Failed to fetch constraints:', err)
+    }
+  }
+
   const loadExample = () => {
     setLyrics(EXAMPLE_LYRICS)
     setPrompt(EXAMPLE_PROMPT)
+  }
+
+  const generateLyrics = async () => {
+    if (!lyricsTopic.trim()) return
+    
+    setIsGeneratingLyrics(true)
+    try {
+      const res = await fetch('/api/generations/lyrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          topic: lyricsTopic,
+          mood: lyricsMood || undefined 
+        })
+      })
+      
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const data = await res.json()
+      
+      if (data.lyrics) {
+        setLyrics(data.lyrics)
+        setShowLyricsHelper(false)
+        setLyricsTopic('')
+        setLyricsMood('')
+      } else if (data.error) {
+        setError(data.error)
+      }
+    } catch (err) {
+      setError('Failed to generate lyrics')
+    } finally {
+      setIsGeneratingLyrics(false)
+    }
   }
 
   const downloadAudio = async (url: string, filename: string) => {
@@ -74,7 +141,7 @@ function Studio() {
   }
 
   const handleGenerate = async () => {
-    if (!lyrics.trim()) return
+    if (mode === GENERATION_MODES.LYRICS && !lyrics.trim()) return
     
     setIsGenerating(true)
     setError('')
@@ -84,8 +151,19 @@ function Studio() {
       const res = await fetch('/api/generations/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ lyrics, prompt })
+        body: JSON.stringify({ 
+          lyrics: mode === GENERATION_MODES.LYRICS ? lyrics : undefined,
+          prompt 
+        })
       })
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          setError('Session expired. Please sign in again.')
+          return
+        }
+        throw new Error(`HTTP ${res.status}`)
+      }
       
       const data = await res.json()
       
@@ -101,6 +179,14 @@ function Studio() {
       setIsGenerating(false)
     }
   }
+
+  const lyricsValid = !constraints || (lyrics.length >= constraints.lyrics.min && lyrics.length <= constraints.lyrics.max)
+  const promptValid = !constraints || (prompt.length >= constraints.prompt.min && prompt.length <= constraints.prompt.max)
+
+  // For now, only lyrics mode is functional
+  const canGenerate = mode === GENERATION_MODES.LYRICS 
+    ? (lyrics.trim() && lyricsValid && promptValid)
+    : promptValid
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
@@ -144,32 +230,116 @@ function Studio() {
           <div className="space-y-8">
             <div>
               <h1 className="text-3xl font-bold mb-2">Studio</h1>
-              <p className="text-zinc-600 dark:text-zinc-400">Write your lyrics and choose a style to generate music</p>
+              <p className="text-zinc-600 dark:text-zinc-400">Create AI-generated music with your own lyrics</p>
             </div>
 
-            {/* Lyrics Input */}
-            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <label htmlFor="lyrics" className="block font-semibold text-lg">
-                  Lyrics
-                </label>
+            {/* Mode Selection - Ready for instrumental mode */}
+            <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-2 shadow-sm">
+              <div className="flex gap-2">
                 <button
-                  onClick={loadExample}
-                  disabled={isGenerating}
-                  className="text-sm text-orange-500 hover:text-orange-600 disabled:opacity-50 font-medium"
+                  onClick={() => setMode(GENERATION_MODES.LYRICS)}
+                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+                    mode === GENERATION_MODES.LYRICS
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-transparent text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                  }`}
                 >
-                  Reset to Example
+                  With Lyrics
+                </button>
+                <button
+                  disabled
+                  className="flex-1 py-3 px-4 rounded-xl font-medium bg-transparent text-zinc-400 cursor-not-allowed"
+                  title="Instrumental mode coming soon"
+                >
+                  Instrumental (Soon)
                 </button>
               </div>
-              <textarea
-                id="lyrics"
-                value={lyrics}
-                onChange={(e) => setLyrics(e.target.value)}
-                placeholder="Enter your lyrics here..."
-                disabled={isGenerating}
-                className="w-full h-56 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
-              />
             </div>
+
+            {/* Lyrics Section */}
+            {mode === GENERATION_MODES.LYRICS && (
+              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                <div className="flex justify-between items-center mb-4">
+                  <label htmlFor="lyrics" className="block font-semibold text-lg">
+                    Your Lyrics
+                  </label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowLyricsHelper(!showLyricsHelper)}
+                      disabled={isGenerating}
+                      className="text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-200 dark:hover:bg-orange-900/50 px-3 py-1.5 rounded-lg disabled:opacity-50 font-medium transition-all"
+                    >
+                      {showLyricsHelper ? 'Hide Helper' : 'Help Me Write'}
+                    </button>
+                    <button
+                      onClick={loadExample}
+                      disabled={isGenerating}
+                      className="text-sm text-zinc-600 dark:text-zinc-400 hover:text-orange-500 disabled:opacity-50 font-medium"
+                    >
+                      Reset to Example
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lyrics Helper */}
+                {showLyricsHelper && (
+                  <div className="bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-4">
+                    <h4 className="font-semibold mb-3">Generate Lyrics Ideas</h4>
+                    <div className="space-y-3">
+                      <input
+                        type="text"
+                        value={lyricsTopic}
+                        onChange={(e) => setLyricsTopic(e.target.value)}
+                        placeholder="What is your song about? (e.g., summer love, heartbreak, adventure)"
+                        className="w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <input
+                        type="text"
+                        value={lyricsMood}
+                        onChange={(e) => setLyricsMood(e.target.value)}
+                        placeholder="What mood? (optional) (e.g., happy, melancholic, energetic)"
+                        className="w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500"
+                      />
+                      <button
+                        onClick={generateLyrics}
+                        disabled={!lyricsTopic.trim() || isGeneratingLyrics}
+                        className="w-full py-2 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all"
+                      >
+                        {isGeneratingLyrics ? (
+                          <span className="flex items-center justify-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                            Creating Ideas...
+                          </span>
+                        ) : (
+                          'Generate Ideas'
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <textarea
+                  id="lyrics"
+                  value={lyrics}
+                  onChange={(e) => setLyrics(e.target.value)}
+                  placeholder="Enter your lyrics here or use the helper above..."
+                  disabled={isGenerating}
+                  className="w-full h-56 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
+                />
+                {constraints && (
+                  <div className="flex justify-between mt-2">
+                    <p className={`text-sm ${lyricsValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
+                      {lyrics.length} / {constraints.lyrics.max} characters
+                    </p>
+                    {lyrics.length < constraints.lyrics.min && (
+                      <p className="text-sm text-red-500">
+                        Minimum {constraints.lyrics.min} characters required
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Prompt Input */}
             <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
@@ -184,6 +354,18 @@ function Studio() {
                 disabled={isGenerating}
                 className="w-full h-24 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
               />
+              {constraints && (
+                <div className="flex justify-between mt-2">
+                  <p className={`text-sm ${promptValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
+                    {prompt.length} / {constraints.prompt.max} characters
+                  </p>
+                  {prompt.length < constraints.prompt.min && (
+                    <p className="text-sm text-red-500">
+                      Minimum {constraints.prompt.min} characters required
+                    </p>
+                  )}
+                </div>
+              )}
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-500">
                 Examples: Jazz, Pop, Electronic, Rock, Classical, Lo-fi, Upbeat, Melancholic
               </p>
@@ -200,7 +382,7 @@ function Studio() {
             <div className="flex flex-col items-center gap-4">
               <button
                 onClick={handleGenerate}
-                disabled={isGenerating || !lyrics.trim() || credits < 1}
+                disabled={isGenerating || credits < 1 || !canGenerate}
                 className="w-full max-w-md py-4 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
               >
                 {isGenerating ? (
@@ -242,7 +424,7 @@ function Studio() {
                     onClick={() => downloadAudio(audioUrl, 'makemusic-generation.mp3')}
                     className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all"
                   >
-                    Download MP3
+                    Download
                   </button>
                 </div>
               </div>

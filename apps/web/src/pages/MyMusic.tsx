@@ -12,14 +12,14 @@ interface Generation {
 }
 
 function MyMusic() {
-  const { userId } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (userId) fetchGenerations()
-  }, [userId])
+    if (isLoaded && userId) fetchGenerations()
+  }, [isLoaded, userId])
 
   const fetchGenerations = async () => {
     try {

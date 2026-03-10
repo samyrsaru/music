@@ -4,15 +4,15 @@ import { Link } from 'react-router'
 import { ThemeToggle } from '../components/ThemeToggle.tsx'
 
 function Home() {
-  const { userId } = useAuth()
+  const { userId, isLoaded } = useAuth()
   const [status, setStatus] = useState<any>(null)
   const [statusLoading, setStatusLoading] = useState(true)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (userId) fetchStatus()
-  }, [userId])
+    if (isLoaded && userId) fetchStatus()
+  }, [isLoaded, userId])
 
   const fetchStatus = async () => {
     setStatusLoading(true)

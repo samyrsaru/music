@@ -9,6 +9,26 @@ const replicate = new Replicate({
 
 const app = new Hono()
 
+// Model configuration - centralized constraints
+const MODEL_CONFIG = {
+  id: 'minimax/music-1.5',
+  constraints: {
+    lyrics: {
+      min: 10,
+      max: 600,
+    },
+    prompt: {
+      min: 10,
+      max: 300,
+    }
+  }
+}
+
+// Get model configuration
+app.get('/config', (c) => {
+  return c.json(MODEL_CONFIG)
+})
+
 // Generate music
 app.post('/generate', async (c) => {
   const auth = getAuth(c)
@@ -16,8 +36,36 @@ app.post('/generate', async (c) => {
 
   const { lyrics, prompt } = await c.req.json()
   
-  if (!lyrics?.trim()) {
-    return c.json({ error: 'Lyrics required' }, 400)
+  // Server-side validation using model constraints
+  const lyricsLength = lyrics?.length || 0
+  const promptLength = prompt?.length || 0
+  
+  if (lyricsLength < MODEL_CONFIG.constraints.lyrics.min) {
+    return c.json({ 
+      error: `Lyrics must be at least ${MODEL_CONFIG.constraints.lyrics.min} characters`,
+      field: 'lyrics'
+    }, 400)
+  }
+  
+  if (lyricsLength > MODEL_CONFIG.constraints.lyrics.max) {
+    return c.json({ 
+      error: `Lyrics must be no more than ${MODEL_CONFIG.constraints.lyrics.max} characters`,
+      field: 'lyrics'
+    }, 400)
+  }
+  
+  if (promptLength < MODEL_CONFIG.constraints.prompt.min) {
+    return c.json({
+      error: `Prompt must be at least ${MODEL_CONFIG.constraints.prompt.min} characters`,
+      field: 'prompt'
+    }, 400)
+  }
+
+  if (promptLength > MODEL_CONFIG.constraints.prompt.max) {
+    return c.json({ 
+      error: `Prompt must be no more than ${MODEL_CONFIG.constraints.prompt.max} characters`,
+      field: 'prompt'
+    }, 400)
   }
 
   const user = db.prepare('SELECT credits FROM users WHERE clerkUserId = ?')
@@ -103,6 +151,65 @@ app.post('/generate', async (c) => {
     db.prepare('UPDATE users SET credits = credits + 1 WHERE clerkUserId = ?')
       .run(auth.userId)
     return c.json({ error: 'Generation failed', details: error.message }, 500)
+  }
+})
+
+// Generate lyrics helper
+app.post('/lyrics', async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const { topic, mood } = await c.req.json()
+  
+  if (!topic?.trim()) {
+    return c.json({ error: 'Topic is required' }, 400)
+  }
+
+  try {
+    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''}`)
+    
+    const prompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}. 
+Format with [Verse], [Chorus], [Bridge] sections. 
+Keep it between ${MODEL_CONFIG.constraints.lyrics.min} and ${MODEL_CONFIG.constraints.lyrics.max} characters.
+Make it creative and rhyming.`
+
+    const output = await replicate.run("meta/llama-2-70b-chat", {
+      input: {
+        prompt: prompt,
+        max_tokens: 800,
+        temperature: 0.8
+      }
+    }) as any
+
+    let generatedLyrics: string
+    
+    if (typeof output === 'string') {
+      generatedLyrics = output
+    } else if (Array.isArray(output) && output.length > 0) {
+      generatedLyrics = output.join('')
+    } else if (output && typeof output === 'object') {
+      generatedLyrics = output.output || output.text || JSON.stringify(output)
+    } else {
+      generatedLyrics = String(output)
+    }
+
+    // Clean up the response
+    generatedLyrics = generatedLyrics.trim()
+    
+    // Ensure it fits constraints
+    if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
+      generatedLyrics = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
+    }
+
+    console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)
+
+    return c.json({
+      success: true,
+      lyrics: generatedLyrics
+    })
+  } catch (error: any) {
+    console.error(`❌ [LYRICS] Generation error:`, error.message)
+    return c.json({ error: 'Failed to generate lyrics', details: error.message }, 500)
   }
 })
 

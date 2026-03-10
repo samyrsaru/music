@@ -93,6 +93,9 @@ function Studio() {
       
       if (data.lyrics) {
         setLyrics(data.lyrics)
+        if (data.style) {
+          setPrompt(data.style)
+        }
         setStep('lyrics')
       } else if (data.error) {
         setError(data.error)
@@ -224,17 +227,35 @@ function Studio() {
                 <p className="text-zinc-600 dark:text-zinc-400">Give us the spark, we'll write the fire</p>
               </div>
 
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                  <textarea
-                    value={songIdea}
-                    onChange={(e) => setSongIdea(e.target.value)}
-                    placeholder="e.g., A love song about summer nights, jazz style, romantic and dreamy..."
-                    className="w-full h-32 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none transition-all"
-                  />
+              <div className="space-y-4">
+                <textarea
+                  value={songIdea}
+                  onChange={(e) => setSongIdea(e.target.value)}
+                  placeholder="e.g., A love song about summer nights, jazz style, romantic and dreamy..."
+                  className="w-full h-32 px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none shadow-sm transition-all"
+                />
+
+                {/* Examples */}
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-sm text-zinc-500 dark:text-zinc-500 py-1">Try:</span>
+                  {[
+                    'Jazz love song, romantic and dreamy',
+                    'Upbeat pop about dancing all night',
+                    'Melancholic acoustic about rain',
+                    'Electronic dance track, energetic',
+                    'Lofi hip hop for studying'
+                  ].map((example) => (
+                    <button
+                      key={example}
+                      onClick={() => setSongIdea(example)}
+                      className="text-xs px-3 py-1 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 rounded-full transition-colors"
+                    >
+                      {example}
+                    </button>
+                  ))}
                 </div>
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-4 pt-2">
                   <button
                     onClick={generateLyricsFromIdea}
                     disabled={!songIdea.trim() || isGeneratingLyrics || credits < 1}
@@ -243,12 +264,12 @@ function Studio() {
                     {isGeneratingLyrics ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                        Creating Lyrics...
+                        Writing Your Song...
                       </span>
                     ) : credits < 1 ? (
                       'No Credits - Subscribe to Generate'
                     ) : (
-                      'Next'
+                      'Write My Lyrics ✍️'
                     )}
                   </button>
 
@@ -277,7 +298,7 @@ function Studio() {
           {step === 'generating' && (
             <div className="max-w-2xl mx-auto text-center py-20">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-6"></div>
-              <h2 className="text-2xl font-bold mb-2">Creating your lyrics...</h2>
+              <h2 className="text-2xl font-bold mb-2">Writing your masterpiece...</h2>
               <p className="text-zinc-600 dark:text-zinc-400">This will just take a moment</p>
             </div>
           )}
@@ -298,67 +319,73 @@ function Studio() {
                 </button>
               </div>
 
-              {/* Lyrics Section */}
+              {/* Lyrics & Style Section */}
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-4">
-                  <label htmlFor="lyrics" className="block font-semibold text-lg">
-                    Lyrics
-                  </label>
-                  <span className="text-sm text-zinc-500 dark:text-zinc-500">
-                    Edit as needed
-                  </span>
+                {/* Lyrics */}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <label htmlFor="lyrics" className="block font-semibold text-lg">
+                      Lyrics
+                    </label>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-500">
+                      Edit as needed
+                    </span>
+                  </div>
+
+                  <textarea
+                    id="lyrics"
+                    value={lyrics}
+                    onChange={(e) => setLyrics(e.target.value)}
+                    placeholder="Enter your lyrics here..."
+                    disabled={isGenerating}
+                    className="w-full h-48 px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
+                  />
+                  {constraints && (
+                    <div className="flex justify-between mt-2">
+                      <p className={`text-sm ${lyricsValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
+                        {lyrics.length} / {constraints.lyrics.max} characters
+                      </p>
+                      {lyrics.length < constraints.lyrics.min && (
+                        <p className="text-sm text-red-500">
+                          Minimum {constraints.lyrics.min} characters required
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <textarea
-                  id="lyrics"
-                  value={lyrics}
-                  onChange={(e) => setLyrics(e.target.value)}
-                  placeholder="Enter your lyrics here..."
-                  disabled={isGenerating}
-                  className="w-full h-64 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
-                />
-                {constraints && (
-                  <div className="flex justify-between mt-2">
-                    <p className={`text-sm ${lyricsValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
-                      {lyrics.length} / {constraints.lyrics.max} characters
-                    </p>
-                    {lyrics.length < constraints.lyrics.min && (
-                      <p className="text-sm text-red-500">
-                        Minimum {constraints.lyrics.min} characters required
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
+                {/* Divider */}
+                <div className="border-t border-zinc-200 dark:border-zinc-800 my-6"></div>
 
-              {/* Style Input */}
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
-                <label htmlFor="prompt" className="block font-semibold text-lg mb-4">
-                  Style
-                </label>
-                <textarea
-                  id="prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Describe the style, mood, instruments..."
-                  disabled={isGenerating}
-                  className="w-full h-24 px-4 py-3 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
-                />
-                {constraints && (
-                  <div className="flex justify-between mt-2">
-                    <p className={`text-sm ${promptValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
-                      {prompt.length} / {constraints.prompt.max} characters
-                    </p>
-                    {prompt.length < constraints.prompt.min && (
-                      <p className="text-sm text-red-500">
-                        Minimum {constraints.prompt.min} characters required
+                {/* Style */}
+                <div>
+                  <label htmlFor="prompt" className="block font-semibold text-lg mb-4">
+                    Style
+                  </label>
+                  <textarea
+                    id="prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder="Describe the style, mood, instruments..."
+                    disabled={isGenerating}
+                    className="w-full h-20 px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
+                  />
+                  {constraints && (
+                    <div className="flex justify-between mt-2">
+                      <p className={`text-sm ${promptValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
+                        {prompt.length} / {constraints.prompt.max} characters
                       </p>
-                    )}
-                  </div>
-                )}
-                <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-500">
-                  Examples: Jazz, Pop, Electronic, Rock, Classical, Lo-fi, Upbeat, Melancholic
-                </p>
+                      {prompt.length < constraints.prompt.min && (
+                        <p className="text-sm text-red-500">
+                          Minimum {constraints.prompt.min} characters required
+                        </p>
+                      )}
+                    </div>
+                  )}
+                  <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-500">
+                    Examples: Jazz, Pop, Electronic, Rock, Classical, Lo-fi, Upbeat, Melancholic
+                  </p>
+                </div>
               </div>
 
               {/* Error Message */}
@@ -378,13 +405,13 @@ function Studio() {
                   {isGenerating ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Generating Music...
+                      Crafting Your Track...
                     </span>
                   ) : credits < 1 ? (
-                    'No Credits - Subscribe to Generate'
-                  ) : (
-                    'Generate Music (1 credit)'
-                  )}
+                      'No Credits - Subscribe to Generate'
+                    ) : (
+                      'Make It Sing ✨'
+                    )}
                 </button>
                 <p className="text-sm text-zinc-500 dark:text-zinc-500">
                   {credits} credits remaining

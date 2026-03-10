@@ -194,44 +194,107 @@ app.post('/lyrics', async (c) => {
   try {
     console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''}`)
     
-    const prompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}. 
+    // Generate lyrics
+    const lyricsPrompt = `[INST] Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}. 
 Format with [Verse], [Chorus], [Bridge] sections. 
 Keep it between ${MODEL_CONFIG.constraints.lyrics.min} and ${MODEL_CONFIG.constraints.lyrics.max} characters.
-Make it creative and rhyming.`
+Make it creative and rhyming.
 
-    const output = await replicate.run("meta/meta-llama-3-8b-instruct", {
+STRICT REQUIREMENTS:
+- Return ONLY the lyrics text
+- NO introductory phrases like "Here are lyrics" or "Sure, here is"
+- NO explanations or notes
+- Start directly with the content: either "[Verse]" or the first line of lyrics
+- Do not include the word "assistant" or any role indicators [/INST]`
+
+    const lyricsOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
       input: {
-        prompt: prompt,
+        prompt: lyricsPrompt,
         max_tokens: 800,
-        temperature: 0.8
+        temperature: 0.8,
+        system_prompt: "You are a songwriting assistant. You write only song lyrics, nothing else. Never include introductions, explanations, or metadata. Just output the lyrics directly."
       }
     }) as any
 
     let generatedLyrics: string
     
-    if (typeof output === 'string') {
-      generatedLyrics = output
-    } else if (Array.isArray(output) && output.length > 0) {
-      generatedLyrics = output.join('')
-    } else if (output && typeof output === 'object') {
-      generatedLyrics = output.output || output.text || JSON.stringify(output)
+    if (typeof lyricsOutput === 'string') {
+      generatedLyrics = lyricsOutput
+    } else if (Array.isArray(lyricsOutput) && lyricsOutput.length > 0) {
+      generatedLyrics = lyricsOutput.join('')
+    } else if (lyricsOutput && typeof lyricsOutput === 'object') {
+      generatedLyrics = lyricsOutput.output || lyricsOutput.text || JSON.stringify(lyricsOutput)
     } else {
-      generatedLyrics = String(output)
+      generatedLyrics = String(lyricsOutput)
     }
 
-    // Clean up the response
+    // Clean up the response - remove common prefixes
     generatedLyrics = generatedLyrics.trim()
+    generatedLyrics = generatedLyrics.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
+    generatedLyrics = generatedLyrics.replace(/^(here are|here is|sure,? here are|sure,? here is)[\s\w]*?:?\s*/i, '')
+    generatedLyrics = generatedLyrics.replace(/^["']|["']$/g, '').trim()
     
     // Ensure it fits constraints
     if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
       generatedLyrics = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
     }
 
+    // Generate matching style based on the topic and mood
+    console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
+    
+    const stylePrompt = `[INST] Based on this song idea: "${topic}"${mood ? ` with a ${mood} mood` : ''}, 
+generate a short music style description (10-100 characters) that would match the lyrics.
+Include genre, mood, and any specific instruments or vibes. Be specific but concise.
+Example: Jazz, romantic, smooth saxophone, dreamy atmosphere
+Example: Upbeat pop, energetic, electronic synths, danceable
+Example: Acoustic folk, melancholic, gentle guitar, rainy day vibes
+
+STRICT: Return ONLY the style description text. NO quotes. NO introductions. Just the description. [/INST]`
+
+    const styleOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+      input: {
+        prompt: stylePrompt,
+        max_tokens: 100,
+        temperature: 0.7,
+        system_prompt: "You are a music style expert. You describe music styles in a short, specific format. Never use quotes or introductions. Just output the style description directly."
+      }
+    }) as any
+
+    let generatedStyle: string
+    
+    if (typeof styleOutput === 'string') {
+      generatedStyle = styleOutput
+    } else if (Array.isArray(styleOutput) && styleOutput.length > 0) {
+      generatedStyle = styleOutput.join('')
+    } else if (styleOutput && typeof styleOutput === 'object') {
+      generatedStyle = styleOutput.output || styleOutput.text || String(styleOutput)
+    } else {
+      generatedStyle = String(styleOutput)
+    }
+
+    // Clean up the style - remove quotes, prefixes, etc.
+    generatedStyle = generatedStyle.trim()
+    generatedStyle = generatedStyle.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
+    generatedStyle = generatedStyle.replace(/^(the style is|style:|here is|here are)[\s\w]*?:?\s*/i, '')
+    generatedStyle = generatedStyle.replace(/^["']+|["']+$/g, '').trim()
+    
+    // Ensure style fits constraints
+    if (generatedStyle.length > MODEL_CONFIG.constraints.prompt.max) {
+      generatedStyle = generatedStyle.substring(0, MODEL_CONFIG.constraints.prompt.max)
+    }
+    
+    // Fallback if style is too short
+    if (generatedStyle.length < MODEL_CONFIG.constraints.prompt.min) {
+      generatedStyle = `${mood || 'Upbeat'} ${topic.split(' ').slice(0, 3).join(' ')} style music`
+    }
+
     console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)
+    console.log(`✅ [STYLE] Generated: "${generatedStyle}"`)
 
     return c.json({
       success: true,
-      lyrics: generatedLyrics
+      lyrics: generatedLyrics,
+      style: generatedStyle
     })
   } catch (error: any) {
     console.error(`❌ [LYRICS] Generation error:`, error.message)

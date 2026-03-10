@@ -9,6 +9,9 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1005.0",
+    "@aws-sdk/lib-storage": "^3.1005.0",
+    "@aws-sdk/s3-request-presigner": "^3.1005.0",
     "@clerk/backend": "^1.0.0",
     "@hono/clerk-auth": "^3.1.0",
     "@hono/node-server": "^1.13.0",

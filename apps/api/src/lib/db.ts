@@ -30,10 +30,28 @@ db.exec(`
     replicateId TEXT,
     status TEXT DEFAULT 'pending',
     audioUrl TEXT,
+    r2Key TEXT,
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     completedAt TEXT,
     FOREIGN KEY (clerkUserId) REFERENCES users(clerkUserId)
   )
 `)
+
+// Migrations for existing databases
+try {
+  db.exec(`ALTER TABLE generations ADD COLUMN r2Key TEXT`)
+  console.log('✅ Migration: Added r2Key column to generations table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
+// Remove old r2Url column if it exists (from previous implementation)
+try {
+  // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
+  // For now, just leave it - it won't hurt anything
+  console.log('ℹ️ Skipping removal of old r2Url column (SQLite limitation)')
+} catch (err) {
+  // Ignore
+}
 
 export default db

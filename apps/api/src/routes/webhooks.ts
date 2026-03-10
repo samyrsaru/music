@@ -1,6 +1,7 @@
 import { Hono } from 'hono'
 import { Webhook } from 'svix'
 import db from '../lib/db.js'
+import { uploadAudioToR2, downloadAudioFromUrl } from '../lib/r2.js'
 
 const app = new Hono()
 
@@ -17,15 +18,35 @@ app.post('/replicate', async (c) => {
         .get(id) as any
       
       if (generation) {
-        // Update with audio URL
+        // Get audio URL from Replicate output
         const audioUrl = Array.isArray(output) ? output[0] : output
+        
+        let r2Key: string | null = null
+        
+        // Try to download and upload to R2
+        try {
+          console.log(`⬇️ Downloading audio from Replicate for generation ${generation.id}...`)
+          const audioBuffer = await downloadAudioFromUrl(audioUrl)
+          
+          // Create a unique key for this file
+          const key = `audio/${generation.clerkUserId}/${generation.id}.mp3`
+          
+          console.log(`⬆️ Uploading audio to R2...`)
+          r2Key = await uploadAudioToR2(audioBuffer, key)
+          console.log(`✅ Uploaded to R2: ${r2Key}`)
+        } catch (r2Error) {
+          console.error('R2 upload failed:', r2Error)
+          // Continue without R2 key - we'll fall back to Replicate URL
+        }
+        
+        // Update with audio URL and R2 key
         db.prepare(`
           UPDATE generations 
-          SET status = 'completed', audioUrl = ?, completedAt = datetime('now')
+          SET status = 'completed', audioUrl = ?, r2Key = ?, completedAt = datetime('now')
           WHERE replicateId = ?
-        `).run(audioUrl, id)
+        `).run(audioUrl, r2Key, id)
         
-        console.log(`✅ Generation ${generation.id} completed: ${audioUrl}`)
+        console.log(`✅ Generation ${generation.id} completed: ${r2Key || audioUrl}`)
       }
     } else if (status === 'failed') {
       // Mark as failed and refund credit

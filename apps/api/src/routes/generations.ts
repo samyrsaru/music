@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { getAuth } from '@hono/clerk-auth'
 import Replicate from 'replicate'
 import db from '../lib/db.js'
+import { uploadAudioToR2, downloadAudioFromUrl, getSignedAudioUrl, deleteAudioFromR2 } from '../lib/r2.js'
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN!,
@@ -131,19 +132,44 @@ app.post('/generate', async (c) => {
 
     console.log(`✅ [SUCCESS] Generation completed! URL: ${audioUrl.substring(0, 60)}...`)
 
+    // Upload to R2 for permanent storage
+    let r2Key: string | null = null
+    try {
+      console.log(`⬇️ Downloading audio for R2 upload...`)
+      const audioBuffer = await downloadAudioFromUrl(audioUrl)
+      const key = `audio/${auth.userId}/${generationId}.mp3`
+      
+      console.log(`⬆️ Uploading audio to R2...`)
+      r2Key = await uploadAudioToR2(audioBuffer, key)
+      console.log(`✅ Uploaded to R2: ${r2Key}`)
+    } catch (r2Error) {
+      console.error('R2 upload failed:', r2Error)
+      // Continue without R2 - we'll use the Replicate URL
+    }
+
     // Store generation in database
     db.prepare(`
-      INSERT INTO generations (id, clerkUserId, lyrics, prompt, audioUrl, createdAt)
-      VALUES (?, ?, ?, ?, ?, datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', audioUrl)
+      INSERT INTO generations (id, clerkUserId, lyrics, prompt, audioUrl, r2Key, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', audioUrl, r2Key)
 
     console.log(`💾 [SAVED] Generation stored with ID: ${generationId}`)
+
+    // Generate signed URL for immediate playback
+    let signedUrl = audioUrl
+    if (r2Key) {
+      try {
+        signedUrl = await getSignedAudioUrl(r2Key, 3600) // 1 hour
+      } catch (err) {
+        console.error('Failed to generate signed URL:', err)
+      }
+    }
 
     return c.json({
       success: true,
       generationId,
       status: 'completed',
-      audioUrl,
+      audioUrl: signedUrl,
       creditsRemaining: user.credits - 1
     })
   } catch (error: any) {
@@ -214,24 +240,48 @@ Make it creative and rhyming.`
 })
 
 // List user's generations (MUST come before /:id route!)
-app.get('/', (c) => {
+app.get('/', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   const generations = db.prepare(`
-    SELECT id, lyrics, prompt, audioUrl, createdAt 
+    SELECT id, lyrics, prompt, audioUrl, r2Key, createdAt 
     FROM generations 
     WHERE clerkUserId = ? 
     ORDER BY createdAt DESC
   `).all(auth.userId) as any[]
 
-  console.log(`📚 [LIBRARY] Returning ${generations.length} generations for user: ${auth.userId.substring(0, 8)}...`)
+  // Generate signed URLs for each generation
+  const transformedGenerations = await Promise.all(
+    generations.map(async (gen) => {
+      let audioUrl = gen.audioUrl
+      
+      // If we have an R2 key, generate a signed URL
+      if (gen.r2Key) {
+        try {
+          audioUrl = await getSignedAudioUrl(gen.r2Key, 3600) // 1 hour
+        } catch (err) {
+          console.error(`Failed to generate signed URL for ${gen.id}:`, err)
+          // Fall back to original URL
+          audioUrl = gen.audioUrl
+        }
+      }
+      
+      return {
+        ...gen,
+        audioUrl,
+        r2Key: undefined // Don't expose the key
+      }
+    })
+  )
 
-  return c.json({ generations })
+  console.log(`📚 [LIBRARY] Returning ${transformedGenerations.length} generations for user: ${auth.userId.substring(0, 8)}...`)
+
+  return c.json({ generations: transformedGenerations })
 })
 
 // Get generation by ID
-app.get('/:id', (c) => {
+app.get('/:id', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
@@ -244,7 +294,59 @@ app.get('/:id', (c) => {
     return c.json({ error: 'Generation not found' }, 404)
   }
 
-  return c.json(generation)
+  // Generate signed URL if R2 key exists
+  let audioUrl = generation.audioUrl
+  if (generation.r2Key) {
+    try {
+      audioUrl = await getSignedAudioUrl(generation.r2Key, 3600) // 1 hour
+    } catch (err) {
+      console.error(`Failed to generate signed URL for ${id}:`, err)
+      // Fall back to original URL
+      audioUrl = generation.audioUrl
+    }
+  }
+
+  return c.json({
+    ...generation,
+    audioUrl,
+    r2Key: undefined, // Don't expose the key
+    r2Url: undefined  // Don't expose internal URLs
+  })
+})
+
+// Delete generation
+app.delete('/:id', async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  
+  // Get the generation to find the R2 key
+  const generation = db.prepare(`
+    SELECT * FROM generations WHERE id = ? AND clerkUserId = ?
+  `).get(id, auth.userId) as any
+
+  if (!generation) {
+    return c.json({ error: 'Generation not found' }, 404)
+  }
+
+  // Delete from R2 if we have a key
+  if (generation.r2Key) {
+    try {
+      await deleteAudioFromR2(generation.r2Key)
+    } catch (err) {
+      console.error(`Failed to delete from R2 for generation ${id}:`, err)
+      // Continue anyway - we still want to delete from database
+    }
+  }
+
+  // Delete from database
+  db.prepare('DELETE FROM generations WHERE id = ? AND clerkUserId = ?')
+    .run(id, auth.userId)
+
+  console.log(`🗑️ Deleted generation ${id} for user: ${auth.userId.substring(0, 8)}...`)
+
+  return c.json({ success: true, message: 'Generation deleted' })
 })
 
 export default app

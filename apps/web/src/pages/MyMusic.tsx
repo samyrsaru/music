@@ -16,6 +16,8 @@ function MyMusic() {
   const [generations, setGenerations] = useState<Generation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   useEffect(() => {
     if (isLoaded && userId) fetchGenerations()
@@ -35,6 +37,29 @@ function MyMusic() {
       setError('Failed to load your music library')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const deleteGeneration = async (id: string) => {
+    setDeleting(id)
+    try {
+      const res = await fetch(`/api/generations/${id}`, {
+        method: 'DELETE',
+      })
+      
+      const data = await res.json()
+      
+      if (data.error) {
+        setError(data.error)
+      } else {
+        // Remove from local state
+        setGenerations(generations.filter(g => g.id !== id))
+        setDeleteConfirm(null)
+      }
+    } catch (err) {
+      setError('Failed to delete track')
+    } finally {
+      setDeleting(null)
     }
   }
 
@@ -156,7 +181,7 @@ function MyMusic() {
                   >
                     <div className="p-6 space-y-4">
                       <div className="flex items-start justify-between gap-4">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-1">
                             {formatDate(gen.createdAt)}
                           </p>
@@ -164,6 +189,15 @@ function MyMusic() {
                             {gen.prompt}
                           </h3>
                         </div>
+                        <button
+                          onClick={() => setDeleteConfirm(gen.id)}
+                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                          title="Delete track"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
 
                       <div className="bg-zinc-50 dark:bg-zinc-950 rounded-lg p-4 border border-zinc-100 dark:border-zinc-800">
@@ -192,6 +226,48 @@ function MyMusic() {
           </div>
         </Show>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-red-100 dark:bg-red-900/30 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold">Delete Track?</h3>
+            </div>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+              This action cannot be undone. The audio file and all associated data will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteConfirm(null)}
+                className="flex-1 py-2.5 px-4 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                disabled={deleting === deleteConfirm}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteGeneration(deleteConfirm)}
+                disabled={deleting === deleteConfirm}
+                className="flex-1 py-2.5 px-4 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-medium rounded-lg transition-all flex items-center justify-center gap-2"
+              >
+                {deleting === deleteConfirm ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

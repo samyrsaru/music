@@ -201,6 +201,18 @@ function MyMusic() {
                             </div>
                           </div>
                         </div>
+                      ) : gen.status === 'failed' ? (
+                        <div className="flex flex-col items-center gap-3 py-4">
+                          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-red-600 dark:text-red-400">Generation failed</p>
+                            <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">Credits refunded</p>
+                          </div>
+                        </div>
                       ) : (
                         <>
                           <audio

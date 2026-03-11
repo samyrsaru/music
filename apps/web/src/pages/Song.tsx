@@ -188,6 +188,26 @@ function Song() {
                     </div>
                   </div>
                 </div>
+              ) : generation.status === 'failed' ? (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg text-red-600 dark:text-red-400">Generation failed</h3>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Your credits have been refunded</p>
+                    </div>
+                    <Link
+                      to="/studio"
+                      className="mt-2 py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
+                    >
+                      Try Again in Studio
+                    </Link>
+                  </div>
+                </div>
               ) : (
                 <>
                   <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-sm">

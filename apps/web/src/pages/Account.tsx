@@ -101,7 +101,7 @@ function Account() {
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr + 'Z').toLocaleDateString(undefined, {
       month: 'long',
       day: 'numeric',
       year: 'numeric'

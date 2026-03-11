@@ -86,7 +86,7 @@ function MyMusic() {
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr + 'Z').toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',

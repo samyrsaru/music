@@ -70,7 +70,7 @@ function Account() {
       if (error) {
         setError(error)
       } else if (portalUrl) {
-        window.open(portalUrl, '_blank')
+        window.location.href = portalUrl
       }
     } catch (err) {
       setError('Failed to open billing portal')

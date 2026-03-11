@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
-import { Webhook } from 'svix'
+import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks.js'
 import db from '../lib/db.js'
 import { uploadAudioToR2, downloadAudioFromUrl } from '../lib/r2.js'
 import { isWebhookProcessed, markWebhookProcessed } from '../lib/sync.js'
 
 const app = new Hono()
+
+console.log('Webhook secret exists:', !!process.env.POLAR_WEBHOOK_SECRET)
 
 // Replicate webhook - called when music generation completes
 app.post('/replicate', async (c) => {
@@ -78,10 +80,8 @@ app.post('/polar', async (c) => {
   const payload = await c.req.text()
   const headers = c.req.header()
   
-  const wh = new Webhook(process.env.POLAR_WEBHOOK_SECRET!)
-  
   try {
-    const event = wh.verify(payload, headers) as any
+    const event = validateEvent(payload, headers, process.env.POLAR_WEBHOOK_SECRET!) as any
     
     // Check for idempotency - skip if already processed
     if (isWebhookProcessed(event.id)) {
@@ -180,8 +180,12 @@ app.post('/polar', async (c) => {
     
     return c.json({ received: true })
   } catch (err) {
+    if (err instanceof WebhookVerificationError) {
+      console.error('Webhook verification failed:', err.message)
+      return c.json({ error: 'Invalid webhook' }, 403)
+    }
     console.error('Webhook error:', err)
-    return c.json({ error: 'Invalid webhook' }, 400)
+    return c.json({ error: 'Webhook processing failed' }, 500)
   }
 })
 

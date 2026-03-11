@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@clerk/react": "^6.0.1",
+    "@clerk/ui": "^1.2.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router": "^7.13.1"

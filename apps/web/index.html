@@ -2,11 +2,50 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="MakeMusic - Create AI-generated music instantly. Generate unique songs with artificial intelligence. Free to try." />
+    <meta name="keywords" content="AI music generator, AI music, music production, artificial intelligence music, song generator, AI song maker" />
+    <meta name="author" content="MakeMusic" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://makemusic.ai" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://makemusic.ai" />
+    <meta property="og:title" content="MakeMusic - AI Music Generator" />
+    <meta property="og:description" content="Create AI-generated music instantly. Generate unique songs with artificial intelligence. Free to try." />
+    <meta property="og:image" content="https://makemusic.ai/og-image.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://makemusic.ai" />
+    <meta name="twitter:title" content="MakeMusic - AI Music Generator" />
+    <meta name="twitter:description" content="Create AI-generated music instantly. Generate unique songs with artificial intelligence. Free to try." />
+    <meta name="twitter:image" content="https://makemusic.ai/og-image.png" />
+
     <title>MakeMusic - AI Music Generator</title>
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "MakeMusic",
+      "description": "AI-powered music generation tool that creates unique songs instantly",
+      "url": "https://makemusic.ai",
+      "applicationCategory": "MusicApplication",
+      "operatingSystem": "Web Browser",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Organization",
+        "name": "MakeMusic"
+      }
+    }
+    </script>
     <script>
-      // Set theme class before React loads to prevent flash
       (function() {
         const saved = localStorage.getItem('theme')
         if (saved === 'dark') {

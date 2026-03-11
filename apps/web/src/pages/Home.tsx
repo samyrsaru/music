@@ -1,48 +1,17 @@
-import { useState, useEffect } from 'react'
-import { SignIn, Show, UserButton, useAuth } from '@clerk/react'
-import { Link } from 'react-router'
+import { useEffect } from 'react'
+import { SignIn, useAuth } from '@clerk/react'
+import { Link, useNavigate } from 'react-router'
 import { ThemeToggle } from '../components/ThemeToggle.tsx'
 
 function Home() {
   const { userId, isLoaded } = useAuth()
-  const [status, setStatus] = useState<any>(null)
-  const [statusLoading, setStatusLoading] = useState(true)
-  const [message, setMessage] = useState('')
-  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    if (isLoaded && userId) fetchStatus()
-  }, [isLoaded, userId])
-
-  const fetchStatus = async () => {
-    setStatusLoading(true)
-    try {
-      const res = await fetch('/api/subscription/status')
-      const data = await res.json()
-      setStatus(data)
-    } catch (err) {
-      console.error('Failed to fetch status:', err)
-    } finally {
-      setStatusLoading(false)
+    if (isLoaded && userId) {
+      navigate('/studio')
     }
-  }
-
-  const subscribe = async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/subscription/checkout', { method: 'POST' })
-      const { checkoutUrl, error } = await res.json()
-      if (error) {
-        setMessage(error)
-      } else {
-        window.location.href = checkoutUrl
-      }
-    } catch (err) {
-      setMessage('Failed to create checkout')
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [isLoaded, userId, navigate])
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
@@ -53,133 +22,26 @@ function Home() {
         </Link>
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <Show when="signed-in">
-            <Link 
-              to="/studio" 
-              className="text-zinc-600 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 transition-colors text-sm font-medium"
-            >
-              Studio
-            </Link>
-            <Link 
-              to="/library" 
-              className="text-zinc-600 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 transition-colors text-sm font-medium"
-            >
-              Library
-            </Link>
-            {status?.subscribed && (
-              <span className="text-sm font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-3 py-1 rounded-full">
-                {status.credits} credits
-              </span>
-            )}
-            <Link 
-              to="/account" 
-              className="text-zinc-600 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 transition-colors text-sm font-medium"
-            >
-              Account
-            </Link>
-            <UserButton />
-          </Show>
-          <Show when="signed-out">
-            <Link
-              to="/studio"
-              className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 transition-colors"
-            >
-              Sign In
-            </Link>
-          </Show>
         </div>
       </nav>
 
       <main className="max-w-5xl mx-auto px-6 py-16">
         {/* Hero Section */}
-        <Show when="signed-out">
-          <div className="text-center max-w-2xl mx-auto">
-            <div className="mb-8">
-              <span className="inline-block text-6xl mb-4">🎵</span>
-              <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
-                Create music with <span className="text-green-500">AI</span>
-              </h1>
-              <p className="text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
-                Turn your lyrics into full songs. Choose your style, add your words, and let AI do the rest.
-              </p>
-            </div>
-            
-            <div className="inline-block bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl p-8">
-              <SignIn routing="hash" />
-            </div>
+        <div className="text-center max-w-2xl mx-auto">
+          <div className="mb-8">
+            <span className="inline-block text-6xl mb-4">🎵</span>
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight mb-6">
+              Create music with <span className="text-green-500">AI</span>
+            </h1>
+            <p className="text-xl text-zinc-600 dark:text-zinc-400 leading-relaxed">
+              Turn your lyrics into full songs. Choose your style, add your words, and let AI do the rest.
+            </p>
           </div>
-        </Show>
 
-        {/* Dashboard */}
-        <Show when="signed-in">
-          <div className="max-w-xl mx-auto">
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold tracking-tight mb-3">
-                Welcome back
-              </h1>
-              <p className="text-zinc-600 dark:text-zinc-400">
-                Ready to create something new?
-              </p>
-            </div>
-
-            {statusLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-green-500 border-t-transparent mx-auto mb-4"></div>
-                <p className="text-zinc-500 dark:text-zinc-400">Loading your account...</p>
-              </div>
-            ) : !status?.subscribed ? (
-              <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
-                    <span className="text-3xl">💎</span>
-                  </div>
-                  <h2 className="text-2xl font-bold mb-2">Upgrade to Pro</h2>
-                  <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                    Get 100 credits per month to generate unlimited music
-                  </p>
-                  <div className="text-4xl font-bold text-green-500 mb-6">
-                    $10<span className="text-lg text-zinc-500 font-normal">/month</span>
-                  </div>
-                  <button 
-                    onClick={subscribe}
-                    disabled={loading}
-                    className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all"
-                  >
-                    {loading ? 'Loading...' : 'Subscribe Now'}
-                  </button>
-                  {message && (
-                    <p className="mt-4 text-red-500 text-sm">{message}</p>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg text-center">
-                  <div className="inline-flex items-center justify-center w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full mb-6">
-                    <span className="text-4xl">🎵</span>
-                  </div>
-                  <div className="text-6xl font-bold text-green-500 mb-2">
-                    {status.credits}
-                  </div>
-                  <p className="text-zinc-600 dark:text-zinc-400 mb-6">credits available</p>
-                  
-                  <Link
-                    to="/studio"
-                    className="inline-block w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
-                  >
-                    Open Studio
-                  </Link>
-                </div>
-
-                {status.currentPeriodEnd && (
-                  <p className="text-center text-sm text-zinc-500 dark:text-zinc-500">
-                    Credits reset on {new Date(status.currentPeriodEnd).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            )}
+          <div className="inline-block">
+            <SignIn routing="hash" />
           </div>
-        </Show>
+        </div>
       </main>
     </div>
   )

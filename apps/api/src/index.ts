@@ -59,7 +59,7 @@ app.route('/credits', creditsRoutes)
 app.route('/webhooks', webhookRoutes)
 app.route('/generations', generationRoutes)
 
-const port = parseInt(process.env.PORT || '3001')
+const port = parseInt(process.env.PORT || '3003')
 
 serve({
   fetch: app.fetch,

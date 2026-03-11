@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Show, useAuth, useUser } from '@clerk/react'
 import { Link } from 'react-router'
+import { useApi } from '../hooks/useApi'
 
 interface SubscriptionStatus {
   subscribed: boolean
@@ -14,6 +15,7 @@ const API_URL = import.meta.env.VITE_API_URL || ''
 function Account() {
   const { userId, isLoaded } = useAuth()
   const { user } = useUser()
+  const { fetchWithAuth } = useApi()
   const [status, setStatus] = useState<SubscriptionStatus | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -46,7 +48,7 @@ function Account() {
   const fetchStatus = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/subscription/status`)
+      const res = await fetchWithAuth(`${API_URL}/api/subscription/status`)
       const data = await res.json()
       setStatus(data)
     } catch (err) {

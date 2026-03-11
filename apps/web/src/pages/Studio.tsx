@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Show, useAuth } from '@clerk/react'
 import { Link, useSearchParams } from 'react-router'
+import { useApi } from '../hooks/useApi'
 
 const EXAMPLE_LYRICS = `[Verse]
 In the hush of night, we find our space,
@@ -35,6 +36,7 @@ interface ModelConstraints {
 
 function Studio() {
   const { userId, isLoaded } = useAuth()
+  const { fetchWithAuth } = useApi()
   const [searchParams] = useSearchParams()
   const [step, setStep] = useState<'input' | 'lyrics' | 'generating'>('input')
   const [songIdea, setSongIdea] = useState('')
@@ -70,7 +72,7 @@ function Studio() {
 
   const fetchStatus = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/subscription/status`)
+      const res = await fetchWithAuth(`${API_URL}/api/subscription/status`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setCredits(data.credits)

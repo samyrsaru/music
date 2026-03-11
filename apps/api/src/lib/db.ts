@@ -45,6 +45,22 @@ try {
   // Column already exists, ignore error
 }
 
+// Add email column to users table for matching Polar customers
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN email TEXT`)
+  console.log('✅ Migration: Added email column to users table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
+// Create index on email for faster lookups
+try {
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)
+  console.log('✅ Migration: Created email index on users table')
+} catch (err) {
+  // Ignore
+}
+
 // Remove old r2Url column if it exists (from previous implementation)
 try {
   // SQLite doesn't support DROP COLUMN directly, so we need to recreate the table
@@ -53,5 +69,35 @@ try {
 } catch (err) {
   // Ignore
 }
+
+// Webhook event tracking for idempotency
+db.exec(`
+  CREATE TABLE IF NOT EXISTS webhook_events (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    processedAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+// Sync state tracking
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sync_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    lastSyncAt TEXT,
+    lastSuccessfulSyncAt TEXT,
+    syncCount INTEGER DEFAULT 0,
+    errorCount INTEGER DEFAULT 0,
+    lastError TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    updatedAt TEXT DEFAULT CURRENT_TIMESTAMP
+  )
+`)
+
+// Initialize sync state if not exists
+db.exec(`
+  INSERT OR IGNORE INTO sync_state (id, lastSyncAt, syncCount, errorCount) 
+  VALUES (1, NULL, 0, 0)
+`)
 
 export default db

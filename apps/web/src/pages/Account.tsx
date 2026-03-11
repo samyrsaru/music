@@ -6,6 +6,7 @@ interface SubscriptionStatus {
   subscribed: boolean
   credits: number
   currentPeriodEnd?: string
+  cancelAtPeriodEnd?: boolean
 }
 
 function Account() {
@@ -15,10 +16,30 @@ function Account() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [managingSubscription, setManagingSubscription] = useState(false)
+  const [startingCheckout, setStartingCheckout] = useState(false)
 
   useEffect(() => {
-    if (isLoaded && userId) fetchStatus()
+    if (isLoaded && userId) {
+      fetchStatus()
+      // Save email to DB so auto-sync can match Polar subscriptions by email
+      saveEmail()
+    }
   }, [isLoaded, userId])
+
+  const saveEmail = async () => {
+    const email = user?.primaryEmailAddress?.emailAddress
+    if (!email) return
+    
+    try {
+      await fetch('/api/subscription/update-email', {
+        method: 'POST',
+        headers: { 'x-user-email': email }
+      })
+    } catch (err) {
+      // Silent fail - not critical
+      console.log('Failed to save email:', err)
+    }
+  }
 
   const fetchStatus = async () => {
     setLoading(true)
@@ -37,7 +58,7 @@ function Account() {
     setManagingSubscription(true)
     try {
       const email = user?.primaryEmailAddress?.emailAddress
-      const res = await fetch('/api/subscription/portal', { 
+      const res = await fetch('/api/subscription/portal', {
         method: 'POST',
         headers: email ? { 'x-user-email': email } : undefined
       })
@@ -45,12 +66,33 @@ function Account() {
       if (error) {
         setError(error)
       } else if (portalUrl) {
-        window.location.href = portalUrl
+        window.open(portalUrl, '_blank')
       }
     } catch (err) {
       setError('Failed to open billing portal')
     } finally {
       setManagingSubscription(false)
+    }
+  }
+
+  const startCheckout = async () => {
+    setStartingCheckout(true)
+    try {
+      const email = user?.primaryEmailAddress?.emailAddress
+      const res = await fetch('/api/subscription/checkout', {
+        method: 'POST',
+        headers: email ? { 'x-user-email': email } : undefined
+      })
+      const { checkoutUrl, error } = await res.json()
+      if (error) {
+        setError(error)
+      } else if (checkoutUrl) {
+        window.location.href = checkoutUrl
+      }
+    } catch (err) {
+      setError('Failed to start checkout')
+    } finally {
+      setStartingCheckout(false)
     }
   }
 
@@ -138,11 +180,17 @@ function Account() {
                   {status?.subscribed ? (
                     <div className="space-y-4">
                       <div className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                        <span className="font-medium">Pro Plan - Active</span>
+                        <span className={`w-2 h-2 rounded-full ${status.cancelAtPeriodEnd ? 'bg-yellow-500' : 'bg-green-500'}`}></span>
+                        <span className="font-medium">
+                          Pro Plan - {status.cancelAtPeriodEnd ? 'Cancels Soon' : 'Active'}
+                        </span>
                       </div>
                       <p className="text-zinc-600 dark:text-zinc-400">
-                        You have unlimited access to generate music.
+                        {status.cancelAtPeriodEnd ? (
+                          <>Your subscription will cancel on {formatDate(status.currentPeriodEnd!)}. You can still use your credits until then.</>
+                        ) : (
+                          <>You have unlimited access to generate music.</>
+                        )}
                       </p>
                       <button
                         onClick={manageSubscription}
@@ -161,12 +209,13 @@ function Account() {
                       <p className="text-zinc-600 dark:text-zinc-400">
                         Upgrade to Pro to get 100 credits per month.
                       </p>
-                      <Link
-                        to="/"
-                        className="inline-block py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-all"
+                      <button
+                        onClick={startCheckout}
+                        disabled={startingCheckout}
+                        className="py-2.5 px-4 bg-green-500 hover:bg-green-600 text-white font-medium rounded-lg transition-all disabled:opacity-50"
                       >
-                        Upgrade to Pro
-                      </Link>
+                        {startingCheckout ? 'Redirecting...' : 'Upgrade to Pro'}
+                      </button>
                     </div>
                   )}
                 </div>

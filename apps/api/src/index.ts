@@ -7,15 +7,15 @@ import subscriptionRoutes from './routes/subscription.js'
 import creditsRoutes from './routes/credits.js'
 import webhookRoutes from './routes/webhooks.js'
 import generationRoutes from './routes/generations.js'
-import { syncAllSubscriptions } from './lib/sync.js'
+import { startPolling, getSyncStatus } from './lib/sync.js'
 
 console.log('CLERK_SECRET_KEY exists:', !!process.env.CLERK_SECRET_KEY)
 console.log('CLERK_PUBLISHABLE_KEY exists:', !!process.env.CLERK_PUBLISHABLE_KEY)
 
 const app = new Hono()
 
-// Sync subscriptions on startup
-syncAllSubscriptions().catch(console.error)
+// Start polling for subscription sync (as backup to webhooks)
+startPolling()
 
 app.use('*', cors({
   origin: process.env.WEB_URL || 'http://localhost:5173',
@@ -33,6 +33,10 @@ app.get('/', (c) => {
 
 app.get('/health', (c) => {
   return c.json({ status: 'ok' })
+})
+
+app.get('/health/sync', (c) => {
+  return c.json(getSyncStatus())
 })
 
 app.get('/protected', (c) => {

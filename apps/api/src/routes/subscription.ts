@@ -22,11 +22,21 @@ app.post('/checkout', async (c) => {
   }
 
   try {
-    const checkout = await polar.checkouts.create({
+    // Get user's email to pre-fill checkout
+    const email = c.req.header('x-user-email')
+
+    const checkoutParams: any = {
       products: [POLAR_PRODUCT_ID],
       successUrl: `${process.env.WEB_URL}/?checkout_id={CHECKOUT_ID}`,
       metadata: { clerkUserId: auth.userId },
-    })
+    }
+
+    // Pre-fill email if provided
+    if (email) {
+      checkoutParams.customerEmail = email
+    }
+
+    const checkout = await polar.checkouts.create(checkoutParams)
 
     return c.json({ checkoutUrl: checkout.url })
   } catch (error: any) {
@@ -51,7 +61,34 @@ app.get('/status', (c) => {
     subscribed: user.status === 'active',
     credits: user.credits,
     currentPeriodEnd: user.currentPeriodEnd,
+    cancelAtPeriodEnd: user.cancelAtPeriodEnd === 1,
   })
+})
+
+// Update user email (called on initial load)
+app.post('/update-email', (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const email = c.req.header('x-user-email')
+  if (!email) {
+    return c.json({ error: 'Email required' }, 400)
+  }
+
+  try {
+    // Insert or update user with email
+    db.prepare(`
+      INSERT INTO users (clerkUserId, email, credits)
+      VALUES (?, ?, 0)
+      ON CONFLICT(clerkUserId) DO UPDATE SET
+        email = excluded.email
+    `).run(auth.userId, email)
+
+    return c.json({ success: true })
+  } catch (error: any) {
+    console.error('Update email error:', error)
+    return c.json({ error: 'Failed to update email' }, 500)
+  }
 })
 
 // Get my user ID (for debugging)
@@ -95,12 +132,11 @@ app.post('/sync', async (c) => {
 
     const customer = customers[0]
     
-    // Get subscriptions for this customer
+    // Get all subscriptions from iterator
     const subsResult = await polar.subscriptions.list({
       customerId: customer.id,
     })
     
-    // Get all subscriptions from iterator
     const subscriptions: any[] = []
     for await (const sub of subsResult) {
       subscriptions.push(sub)
@@ -112,11 +148,12 @@ app.post('/sync', async (c) => {
       return c.json({ error: 'No active subscription found' }, 404)
     }
 
-    // Update or create user with credits
+    // Update or create user with credits and email
     db.prepare(`
-      INSERT INTO users (clerkUserId, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd)
-      VALUES (?, 100, ?, ?, ?, ?)
+      INSERT INTO users (clerkUserId, email, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd)
+      VALUES (?, ?, 100, ?, ?, ?, ?)
       ON CONFLICT(clerkUserId) DO UPDATE SET
+        email = excluded.email,
         credits = CASE WHEN excluded.status = 'active' AND users.status != 'active' THEN 100 ELSE users.credits END,
         polarSubscriptionId = excluded.polarSubscriptionId,
         status = excluded.status,
@@ -124,6 +161,7 @@ app.post('/sync', async (c) => {
         currentPeriodEnd = excluded.currentPeriodEnd
     `).run(
       auth.userId,
+      email,
       activeSub.id,
       activeSub.status,
       activeSub.currentPeriodStart,
@@ -155,20 +193,34 @@ app.post('/portal', async (c) => {
     }
 
     // Get customer by email
-    const customersResult = await polar.customers.list({
+    const customersResult: any = await polar.customers.list({
       email: email,
     })
     
-    const customers: any[] = []
-    for await (const customer of customersResult) {
-      customers.push(customer)
+    // Handle SDK response structure
+    const items = customersResult.items || customersResult.result?.items || []
+    const customer = items[0]
+
+    if (!customer) {
+      return c.json({ 
+        error: 'No subscription found', 
+        message: 'Please subscribe first before managing your billing.' 
+      }, 404)
     }
 
-    if (!customers.length) {
-      return c.json({ error: 'No customer found' }, 404)
-    }
+    // Check for active subscription
+    const subsResult: any = await polar.subscriptions.list({
+      customerId: customer.id,
+    })
+    const subs = subsResult.items || subsResult.result?.items || []
+    const hasActiveSub = subs.some((s: any) => s.status === 'active')
 
-    const customer = customers[0]
+    if (!hasActiveSub) {
+      return c.json({ 
+        error: 'No active subscription', 
+        message: 'You need an active subscription to manage billing. Please subscribe first.' 
+      }, 400)
+    }
     
     // Create customer portal session
     const portal = await polar.customerSessions.create({

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { Webhook } from 'svix'
 import db from '../lib/db.js'
 import { uploadAudioToR2, downloadAudioFromUrl } from '../lib/r2.js'
+import { isWebhookProcessed, markWebhookProcessed } from '../lib/sync.js'
 
 const app = new Hono()
 
@@ -82,36 +83,100 @@ app.post('/polar', async (c) => {
   try {
     const event = wh.verify(payload, headers) as any
     
-    if (event.type === 'subscription.active') {
-      const sub = event.data
-      const clerkUserId = sub.metadata?.clerkUserId
-      
-      if (clerkUserId) {
-        // Insert or update user with 100 credits
-        db.prepare(`
-          INSERT INTO users (clerkUserId, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd)
-          VALUES (?, 100, ?, ?, ?, ?)
-          ON CONFLICT(clerkUserId) DO UPDATE SET
-            credits = 100,
-            polarSubscriptionId = excluded.polarSubscriptionId,
-            status = excluded.status,
-            currentPeriodStart = excluded.currentPeriodStart,
-            currentPeriodEnd = excluded.currentPeriodEnd
-        `).run(
-          clerkUserId,
-          sub.id,
-          sub.status,
-          sub.currentPeriodStart,
-          sub.currentPeriodEnd
-        )
-      }
+    // Check for idempotency - skip if already processed
+    if (isWebhookProcessed(event.id)) {
+      console.log(`⏭️  Skipping duplicate webhook event: ${event.id} (${event.type})`)
+      return c.json({ received: true, duplicate: true })
     }
     
-    if (event.type === 'subscription.canceled') {
-      const sub = event.data
-      db.prepare(`UPDATE users SET status = 'canceled', cancelAtPeriodEnd = 1 
-                  WHERE polarSubscriptionId = ?`).run(sub.id)
+    console.log(`📨 Processing webhook: ${event.type} (${event.id})`)
+    
+    switch (event.type) {
+      case 'subscription.active':
+      case 'subscription.created': {
+        const sub = event.data
+        const clerkUserId = sub.metadata?.clerkUserId
+        
+        if (clerkUserId) {
+          db.prepare(`
+            INSERT INTO users (clerkUserId, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd)
+            VALUES (?, 100, ?, ?, ?, ?)
+            ON CONFLICT(clerkUserId) DO UPDATE SET
+              credits = 100,
+              polarSubscriptionId = excluded.polarSubscriptionId,
+              status = excluded.status,
+              currentPeriodStart = excluded.currentPeriodStart,
+              currentPeriodEnd = excluded.currentPeriodEnd
+          `).run(
+            clerkUserId,
+            sub.id,
+            sub.status,
+            sub.currentPeriodStart,
+            sub.currentPeriodEnd
+          )
+          console.log(`  ✅ Activated subscription for user: ${clerkUserId}`)
+        }
+        break
+      }
+      
+      case 'subscription.canceled': {
+        const sub = event.data
+        db.prepare(`UPDATE users SET status = 'canceled', cancelAtPeriodEnd = 1 
+                    WHERE polarSubscriptionId = ?`).run(sub.id)
+        console.log(`  🚫 Canceled subscription: ${sub.id}`)
+        break
+      }
+      
+      case 'subscription.uncanceled': {
+        const sub = event.data
+        db.prepare(`UPDATE users SET status = 'active', cancelAtPeriodEnd = 0 
+                    WHERE polarSubscriptionId = ?`).run(sub.id)
+        console.log(`  🔄 Uncanceled subscription: ${sub.id}`)
+        break
+      }
+      
+      case 'subscription.updated': {
+        const sub = event.data
+        const clerkUserId = sub.metadata?.clerkUserId
+        
+        if (clerkUserId) {
+          db.prepare(`
+            UPDATE users 
+            SET status = ?, currentPeriodEnd = ?, cancelAtPeriodEnd = ?
+            WHERE clerkUserId = ?
+          `).run(
+            sub.status,
+            sub.currentPeriodEnd,
+            sub.cancelAtPeriodEnd ? 1 : 0,
+            clerkUserId
+          )
+          console.log(`  📝 Updated subscription for user: ${clerkUserId}`)
+        }
+        break
+      }
+      
+      case 'subscription.past_due': {
+        const sub = event.data
+        db.prepare(`UPDATE users SET status = 'past_due' 
+                    WHERE polarSubscriptionId = ?`).run(sub.id)
+        console.log(`  ⚠️  Subscription past due: ${sub.id}`)
+        break
+      }
+      
+      case 'subscription.revoked': {
+        const sub = event.data
+        db.prepare(`UPDATE users SET status = 'revoked' 
+                    WHERE polarSubscriptionId = ?`).run(sub.id)
+        console.log(`  🗑️  Subscription revoked: ${sub.id}`)
+        break
+      }
+      
+      default:
+        console.log(`  ℹ️  Unhandled webhook type: ${event.type}`)
     }
+    
+    // Mark event as processed
+    markWebhookProcessed(event.id, event.type, event.data)
     
     return c.json({ received: true })
   } catch (err) {

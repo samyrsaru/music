@@ -9,7 +9,7 @@ name = "music"
 compatibility_date = "2026-03-11"
 
 [assets]
-directory = "./dist/"
+directory = "./dist"
 not_found_handling = "single-page-application"
 
 # Development environment variables
@@ -23,6 +23,7 @@ VITE_CLERK_PUBLISHABLE_KEY = "pk_live_YOUR_KEY"
 VITE_API_URL = "https://api.music.likeahe.ro"
 
 # Exclude assets from SPA handling - serve them directly
-[[routes]]
-pattern = "music.likeahe.ro/assets/*"
+#[[routes]]
+#pattern = "music.likeahe.ro/assets/*"
+#zone_name = "likeahe.ro"
 

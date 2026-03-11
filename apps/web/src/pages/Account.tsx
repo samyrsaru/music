@@ -33,9 +33,9 @@ function Account() {
   const saveEmail = async () => {
     const email = user?.primaryEmailAddress?.emailAddress
     if (!email) return
-    
+
     try {
-      await fetch(`${API_URL}/api/subscription/update-email`, {
+      await fetchWithAuth(`${API_URL}/api/subscription/update-email`, {
         method: 'POST',
         headers: { 'x-user-email': email }
       })

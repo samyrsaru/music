@@ -40,18 +40,28 @@ function NotFound() {
             The page you're looking for doesn't exist or has been moved.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/studio"
-              className="inline-block py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
-            >
-              Go to Studio
-            </Link>
-            <Link
-              to="/library"
-              className="inline-block py-3 px-6 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
-            >
-              View Library
-            </Link>
+            <Show when="signed-in">
+              <Link
+                to="/studio"
+                className="inline-block py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
+              >
+                Go to Studio
+              </Link>
+              <Link
+                to="/library"
+                className="inline-block py-3 px-6 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-semibold rounded-xl hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+              >
+                View Library
+              </Link>
+            </Show>
+            <Show when="signed-out">
+              <Link
+                to="/"
+                className="inline-block py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
+              >
+                Go Home
+              </Link>
+            </Show>
           </div>
         </div>
       </main>

@@ -30,7 +30,7 @@ app.get('/config', (c) => {
   return c.json(MODEL_CONFIG)
 })
 
-// Generate music
+// Generate music - Async with webhook
 app.post('/generate', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
@@ -76,108 +76,240 @@ app.post('/generate', async (c) => {
     return c.json({ error: 'Insufficient credits' }, 402)
   }
 
+  // Deduct credits immediately
   db.prepare('UPDATE users SET credits = credits - 1 WHERE clerkUserId = ?')
     .run(auth.userId)
 
+  const generationId = crypto.randomUUID()
+  
   console.log(`🎵 [START] Generation started for user: ${auth.userId.substring(0, 8)}...`)
+  console.log(`   Generation ID: ${generationId}`)
   console.log(`   Lyrics: ${lyrics.substring(0, 50)}...`)
   console.log(`   Prompt: ${prompt || 'pop music'}`)
 
   try {
-    const generationId = crypto.randomUUID()
+    // Create pending generation record
+    db.prepare(`
+      INSERT INTO generations (id, clerkUserId, lyrics, prompt, status, createdAt)
+      VALUES (?, ?, ?, ?, 'pending', datetime('now'))
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music')
+
+    // Start async generation with webhook
     const input = {
       lyrics: lyrics,
       prompt: prompt || 'pop music'
     }
-    
-    const output = await replicate.run("minimax/music-1.5", { input }) as any
 
-    console.log(`📤 [RAW OUTPUT] Replicate returned:`, typeof output, JSON.stringify(output, null, 2))
+    // Get webhook URL from environment or construct it
+    const webhookUrl = process.env.REPLICATE_WEBHOOK_URL || 
+      `${c.req.url.replace('/generate', '')}/generate/webhook`
 
-    // Handle different output formats
-    let audioUrl: string | null = null
-    
-    if (typeof output === 'string') {
-      audioUrl = output
-    } else if (Array.isArray(output) && output.length > 0) {
-      audioUrl = String(output[0])
-    } else if (output && typeof output === 'object') {
-      if (output.url) {
-        audioUrl = typeof output.url === 'function' ? output.url() : String(output.url)
-      } else if (output.output) {
-        if (Array.isArray(output.output) && output.output.length > 0) {
-          audioUrl = String(output.output[0])
-        } else {
-          audioUrl = String(output.output)
-        }
-      } else if (output.audio) {
-        audioUrl = String(output.audio)
-      } else {
-        // Try to find any URL-like string in the object
-        const values = Object.values(output)
-        const urlValue = values.find(v => typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://')))
-        if (urlValue) audioUrl = urlValue as string
-      }
-    }
+    console.log(`🔗 [WEBHOOK] Using webhook URL: ${webhookUrl}`)
 
-    // Ensure audioUrl is a string
-    if (audioUrl && typeof audioUrl !== 'string') {
-      audioUrl = String(audioUrl)
-    }
+    // Start the prediction asynchronously with webhook
+    const prediction = await replicate.predictions.create({
+      version: "25e048a52cb98213a75825ee3c6b94d05f6aeacd14c77c042cd761df7d7c6228", // minimax/music-1.5
+      input,
+      webhook: webhookUrl,
+      webhook_events_filter: ["completed"]
+    })
 
-    if (!audioUrl || typeof audioUrl !== 'string') {
-      console.error(`❌ [FAILED] No audio URL found in output:`, output)
-      throw new Error('No audio URL in response')
-    }
-
-    console.log(`✅ [SUCCESS] Generation completed! URL: ${audioUrl.substring(0, 60)}...`)
-
-    // Upload to R2 for permanent storage
-    let r2Key: string | null = null
-    try {
-      console.log(`⬇️ Downloading audio for R2 upload...`)
-      const audioBuffer = await downloadAudioFromUrl(audioUrl)
-      const key = `audio/${auth.userId}/${generationId}.mp3`
-      
-      console.log(`⬆️ Uploading audio to R2...`)
-      r2Key = await uploadAudioToR2(audioBuffer, key)
-      console.log(`✅ Uploaded to R2: ${r2Key}`)
-    } catch (r2Error) {
-      console.error('R2 upload failed:', r2Error)
-      // Continue without R2 - we'll use the Replicate URL
-    }
-
-    // Store generation in database
+    // Store the replicate prediction ID
     db.prepare(`
-      INSERT INTO generations (id, clerkUserId, lyrics, prompt, audioUrl, r2Key, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', audioUrl, r2Key)
+      UPDATE generations 
+      SET replicateId = ?
+      WHERE id = ?
+    `).run(prediction.id, generationId)
 
-    console.log(`💾 [SAVED] Generation stored with ID: ${generationId}`)
+    console.log(`⏳ [PENDING] Prediction ${prediction.id} started, waiting for webhook...`)
 
-    // Generate signed URL for immediate playback
-    let signedUrl = audioUrl
-    if (r2Key) {
-      try {
-        signedUrl = await getSignedAudioUrl(r2Key, 3600) // 1 hour
-      } catch (err) {
-        console.error('Failed to generate signed URL:', err)
-      }
-    }
-
+    // Return immediately with pending status
     return c.json({
       success: true,
       generationId,
-      status: 'completed',
-      audioUrl: signedUrl,
-      creditsRemaining: user.credits - 1
+      status: 'pending',
+      creditsRemaining: user.credits - 1,
+      message: 'Generation started. Check status using the generation ID.'
     })
+
   } catch (error: any) {
-    console.error(`❌ [FAILED] Generation error:`, error.message)
+    console.error(`❌ [FAILED] Failed to start generation:`, error.message)
+    
+    // Refund credits on failure to start
     db.prepare('UPDATE users SET credits = credits + 1 WHERE clerkUserId = ?')
       .run(auth.userId)
-    return c.json({ error: 'Generation failed', details: error.message }, 500)
+    
+    // Clean up pending generation if it was created
+    db.prepare('DELETE FROM generations WHERE id = ?').run(generationId)
+    
+    return c.json({ error: 'Failed to start generation', details: error.message }, 500)
   }
+})
+
+// Webhook endpoint for Replicate
+app.post('/generate/webhook', async (c) => {
+  const payload = await c.req.json()
+  
+  console.log(`🔔 [WEBHOOK] Received webhook:`, JSON.stringify(payload, null, 2))
+  
+  // Verify this is a prediction we care about
+  const { id: replicateId, status: replicateStatus, output } = payload
+  
+  if (!replicateId) {
+    console.error(`❌ [WEBHOOK] Missing prediction ID`)
+    return c.json({ error: 'Missing prediction ID' }, 400)
+  }
+
+  // Find the generation by replicate ID
+  const generation = db.prepare(`
+    SELECT * FROM generations WHERE replicateId = ?
+  `).get(replicateId) as any
+
+  if (!generation) {
+    console.error(`❌ [WEBHOOK] Generation not found for replicateId: ${replicateId}`)
+    return c.json({ error: 'Generation not found' }, 404)
+  }
+
+  // Idempotency check - track webhook events
+  const webhookId = crypto.randomUUID()
+  try {
+    db.prepare(`
+      INSERT INTO webhook_events (id, type, payload)
+      VALUES (?, 'replicate_prediction', ?)
+    `).run(webhookId, JSON.stringify(payload))
+  } catch (err) {
+    // Ignore duplicate webhook errors
+  }
+
+  if (replicateStatus === 'succeeded') {
+    try {
+      // Extract audio URL from output
+      let audioUrl: string | null = null
+      
+      if (typeof output === 'string') {
+        audioUrl = output
+      } else if (Array.isArray(output) && output.length > 0) {
+        audioUrl = String(output[0])
+      } else if (output && typeof output === 'object') {
+        if (output.url) {
+          audioUrl = typeof output.url === 'function' ? output.url() : String(output.url)
+        } else if (output.output) {
+          if (Array.isArray(output.output) && output.output.length > 0) {
+            audioUrl = String(output.output[0])
+          } else {
+            audioUrl = String(output.output)
+          }
+        } else if (output.audio) {
+          audioUrl = String(output.audio)
+        } else {
+          const values = Object.values(output)
+          const urlValue = values.find(v => typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://')))
+          if (urlValue) audioUrl = urlValue as string
+        }
+      }
+
+      if (!audioUrl) {
+        throw new Error('No audio URL in webhook payload')
+      }
+
+      console.log(`✅ [WEBHOOK] Generation completed! URL: ${audioUrl.substring(0, 60)}...`)
+
+      // Upload to R2 for permanent storage
+      let r2Key: string | null = null
+      try {
+        console.log(`⬇️ [WEBHOOK] Downloading audio for R2 upload...`)
+        const audioBuffer = await downloadAudioFromUrl(audioUrl)
+        const key = `audio/${generation.clerkUserId}/${generation.id}.mp3`
+        
+        console.log(`⬆️ [WEBHOOK] Uploading audio to R2...`)
+        r2Key = await uploadAudioToR2(audioBuffer, key)
+        console.log(`✅ [WEBHOOK] Uploaded to R2: ${r2Key}`)
+      } catch (r2Error) {
+        console.error('[WEBHOOK] R2 upload failed:', r2Error)
+      }
+
+      // Update generation status
+      db.prepare(`
+        UPDATE generations 
+        SET status = 'completed', 
+            audioUrl = ?, 
+            r2Key = ?, 
+            completedAt = datetime('now')
+        WHERE id = ?
+      `).run(audioUrl, r2Key, generation.id)
+
+      console.log(`💾 [WEBHOOK] Generation ${generation.id} marked as completed`)
+
+    } catch (error: any) {
+      console.error(`❌ [WEBHOOK] Failed to process successful generation:`, error.message)
+      
+      // Mark as failed
+      db.prepare(`
+        UPDATE generations 
+        SET status = 'failed', 
+            completedAt = datetime('now')
+        WHERE id = ?
+      `).run(generation.id)
+    }
+  } else if (replicateStatus === 'failed' || replicateStatus === 'canceled') {
+    console.error(`❌ [WEBHOOK] Generation failed with status: ${replicateStatus}`)
+    
+    // Mark as failed and refund credits
+    db.prepare(`
+      UPDATE generations 
+      SET status = 'failed', 
+          completedAt = datetime('now')
+      WHERE id = ?
+    `).run(generation.id)
+    
+    // Refund credits
+    db.prepare('UPDATE users SET credits = credits + 1 WHERE clerkUserId = ?')
+      .run(generation.clerkUserId)
+    
+    console.log(`💰 [WEBHOOK] Credits refunded to user: ${generation.clerkUserId.substring(0, 8)}...`)
+  }
+
+  return c.json({ success: true })
+})
+
+// Get generation status (for polling)
+app.get('/status/:id', async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  
+  const generation = db.prepare(`
+    SELECT id, status, audioUrl, r2Key, lyrics, prompt, createdAt, completedAt, replicateId
+    FROM generations 
+    WHERE id = ? AND clerkUserId = ?
+  `).get(id, auth.userId) as any
+
+  if (!generation) {
+    return c.json({ error: 'Generation not found' }, 404)
+  }
+
+  // Generate signed URL if completed and has R2 key
+  let signedUrl = generation.audioUrl
+  if (generation.status === 'completed' && generation.r2Key) {
+    try {
+      signedUrl = await getSignedAudioUrl(generation.r2Key, 3600) // 1 hour
+    } catch (err) {
+      console.error(`Failed to generate signed URL for ${id}:`, err)
+      signedUrl = generation.audioUrl
+    }
+  }
+
+  return c.json({
+    id: generation.id,
+    status: generation.status,
+    audioUrl: signedUrl,
+    lyrics: generation.lyrics,
+    prompt: generation.prompt,
+    createdAt: generation.createdAt,
+    completedAt: generation.completedAt,
+    replicateId: generation.replicateId
+  })
 })
 
 // Generate lyrics helper

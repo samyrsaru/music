@@ -28,6 +28,7 @@ app.post('/checkout', async (c) => {
     const checkoutParams: any = {
       products: [POLAR_PRODUCT_ID],
       successUrl: `${process.env.WEB_URL}/?checkout_id={CHECKOUT_ID}`,
+      cancelUrl: `${process.env.WEB_URL}/account`,
       metadata: { clerkUserId: auth.userId },
     }
 
@@ -225,6 +226,7 @@ app.post('/portal', async (c) => {
     // Create customer portal session
     const portal = await polar.customerSessions.create({
       customerId: customer.id,
+      returnUrl: `${process.env.WEB_URL}/account`,
     })
 
     return c.json({ portalUrl: portal.customerPortalUrl })

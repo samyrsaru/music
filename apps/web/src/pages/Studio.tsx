@@ -48,6 +48,8 @@ function Studio() {
   const [error, setError] = useState('')
   const [credits, setCredits] = useState(0)
   const [constraints, setConstraints] = useState<ModelConstraints | null>(null)
+  const [generationId, setGenerationId] = useState<string | null>(null)
+  const [generationStatus, setGenerationStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
 
   // Check for pre-filled lyrics and style from URL params
   useEffect(() => {
@@ -134,6 +136,9 @@ function Studio() {
   const goBackToInput = () => {
     setStep('input')
     setError('')
+    setGenerationStatus('idle')
+    setGenerationId(null)
+    setAudioUrl(null)
   }
 
   const downloadAudio = async (url: string, filename: string) => {
@@ -154,12 +159,44 @@ function Studio() {
     }
   }
 
+  const pollGenerationStatus = async (id: string) => {
+    const poll = async () => {
+      try {
+        const res = await fetchWithAuth(`${API_URL}/api/generations/status/${id}`)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        
+        const data = await res.json()
+        setGenerationStatus(data.status)
+        
+        if (data.status === 'completed') {
+          setAudioUrl(data.audioUrl)
+          setIsGenerating(false)
+          setGenerationId(null)
+        } else if (data.status === 'failed') {
+          setError('Generation failed. Credits have been refunded.')
+          setIsGenerating(false)
+          setGenerationId(null)
+          fetchStatus() // Refresh credits
+        } else {
+          // Still pending, poll again in 3 seconds
+          setTimeout(() => poll(), 3000)
+        }
+      } catch (err) {
+        console.error('Failed to poll status:', err)
+        setTimeout(() => poll(), 3000)
+      }
+    }
+    
+    poll()
+  }
+
   const handleGenerate = async () => {
     if (!lyrics.trim()) return
     
     setIsGenerating(true)
     setError('')
     setAudioUrl(null)
+    setGenerationStatus('pending')
     
     try {
       const res = await fetchWithAuth(`${API_URL}/api/generations/generate`, {
@@ -174,6 +211,8 @@ function Studio() {
       if (!res.ok) {
         if (res.status === 401) {
           setError('Session expired. Please sign in again.')
+          setIsGenerating(false)
+          setGenerationStatus('idle')
           return
         }
         throw new Error(`HTTP ${res.status}`)
@@ -183,14 +222,18 @@ function Studio() {
       
       if (data.error) {
         setError(data.error)
+        setIsGenerating(false)
+        setGenerationStatus('idle')
       } else {
-        setAudioUrl(data.audioUrl)
+        setGenerationId(data.generationId)
         setCredits(data.creditsRemaining)
+        // Start polling for status
+        pollGenerationStatus(data.generationId)
       }
     } catch (err: any) {
       setError('Failed to start generation')
-    } finally {
       setIsGenerating(false)
+      setGenerationStatus('idle')
     }
   }
 
@@ -401,7 +444,7 @@ function Studio() {
                   {isGenerating ? (
                     <span className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      Crafting Your Track...
+                      {generationStatus === 'pending' ? 'Waiting for AI...' : 'Crafting Your Track...'}
                     </span>
                   ) : credits < 1 ? (
                       'No Credits - Subscribe to Generate'
@@ -409,6 +452,12 @@ function Studio() {
                       'Make It Sing ✨'
                     )}
                 </button>
+                {generationStatus === 'pending' && generationId && (
+                  <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center space-y-1">
+                    <p>This may take 1-2 minutes. You can leave this page and check your library later.</p>
+                    <p className="text-xs font-mono opacity-60">ID: {generationId.slice(0, 8)}...</p>
+                  </div>
+                )}
                 <p className="text-sm text-zinc-500 dark:text-zinc-500">
                   {credits} credits remaining
                 </p>

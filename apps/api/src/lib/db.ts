@@ -53,6 +53,18 @@ try {
   // Column already exists, ignore error
 }
 
+// Fix status for existing generations that have audio URLs but pending status
+try {
+  const result = db.exec(`
+    UPDATE generations 
+    SET status = 'completed' 
+    WHERE audioUrl IS NOT NULL AND audioUrl != '' AND status = 'pending'
+  `)
+  console.log('✅ Migration: Fixed status for existing completed generations')
+} catch (err) {
+  // Ignore errors
+}
+
 // Create index on email for faster lookups
 try {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)

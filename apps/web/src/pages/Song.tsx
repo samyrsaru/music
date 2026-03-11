@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Show, useAuth } from '@clerk/react'
 import { Link, useParams, useNavigate } from 'react-router'
 import { registerAudioElement } from '../lib/audioManager.ts'
+import { useApi } from '../hooks/useApi'
 
 interface Generation {
   id: string
@@ -17,6 +18,7 @@ function Song() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { userId, isLoaded } = useAuth()
+  const { fetchWithAuth } = useApi()
   const [generation, setGeneration] = useState<Generation | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -29,7 +31,7 @@ function Song() {
 
   const fetchGeneration = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/generations/${id}`)
+      const res = await fetchWithAuth(`${API_URL}/api/generations/${id}`)
       const data = await res.json()
       
       if (data.error) {
@@ -86,7 +88,7 @@ function Song() {
     
     setDeleting(true)
     try {
-      const res = await fetch(`${API_URL}/api/generations/${id}`, {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/${id}`, {
         method: 'DELETE',
       })
       

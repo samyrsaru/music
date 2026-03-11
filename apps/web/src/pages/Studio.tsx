@@ -98,10 +98,10 @@ function Studio() {
     setIsGeneratingLyrics(true)
     setStep('generating')
     try {
-      const res = await fetch(`${API_URL}/api/generations/lyrics`, {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/lyrics`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           topic: songIdea
         })
       })
@@ -162,12 +162,12 @@ function Studio() {
     setAudioUrl(null)
     
     try {
-      const res = await fetch(`${API_URL}/api/generations/generate`, {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           lyrics,
-          prompt 
+          prompt
         })
       })
       

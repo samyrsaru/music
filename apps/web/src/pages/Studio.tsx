@@ -452,19 +452,36 @@ function Studio() {
                       'Make It Sing ✨'
                     )}
                 </button>
-                {generationStatus === 'pending' && generationId && (
-                  <div className="text-sm text-zinc-500 dark:text-zinc-400 text-center space-y-1">
-                    <p>This may take 1-2 minutes. You can leave this page and check your library later.</p>
-                    <p className="text-xs font-mono opacity-60">ID: {generationId.slice(0, 8)}...</p>
-                  </div>
-                )}
+
                 <p className="text-sm text-zinc-500 dark:text-zinc-500">
                   {credits} credits remaining
                 </p>
               </div>
 
               {/* Result */}
-              {audioUrl && (
+              {generationStatus === 'pending' && generationId && (
+                <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="relative">
+                      <div className="animate-spin rounded-full h-16 w-16 border-4 border-zinc-200 dark:border-zinc-700 border-t-green-500"></div>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-2xl">🎵</span>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-lg">Creating your music...</h3>
+                      <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">This usually takes 1-2 minutes</p>
+                    </div>
+                    <div className="flex gap-1 mt-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {audioUrl && generationStatus === 'completed' && (
                 <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-8 shadow-lg">
                   <div className="flex items-center gap-3 mb-6">
                     <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">

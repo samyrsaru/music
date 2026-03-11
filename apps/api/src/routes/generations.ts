@@ -108,7 +108,7 @@ app.post('/generate', async (c) => {
 
     // Start the prediction asynchronously with webhook
     const prediction = await replicate.predictions.create({
-      version: "25e048a52cb98213a75825ee3c6b94d05f6aeacd14c77c042cd761df7d7c6228", // minimax/music-1.5
+      model: "minimax/music-1.5",
       input,
       webhook: webhookUrl,
       webhook_events_filter: ["completed"]

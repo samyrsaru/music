@@ -6,6 +6,7 @@ import { useApi } from '../hooks/useApi'
 interface SubscriptionStatus {
   subscribed: boolean
   credits: number
+  lifetimeCredits: number
   currentPeriodEnd?: string
   cancelAtPeriodEnd?: boolean
 }
@@ -168,11 +169,17 @@ function Account() {
                   <h2 className="text-lg font-semibold mb-4">Credits</h2>
                   <div className="flex items-baseline gap-2">
                     <span className="text-4xl font-bold text-green-500">{status?.credits || 0}</span>
-                    <span className="text-zinc-500 dark:text-zinc-500">credits remaining</span>
+                    <span className="text-zinc-500 dark:text-zinc-500">subscription credits</span>
                   </div>
+                  {(status?.lifetimeCredits || 0) > 0 && (
+                    <div className="flex items-baseline gap-2 mt-2">
+                      <span className="text-2xl font-bold text-blue-500">+{status!.lifetimeCredits}</span>
+                      <span className="text-zinc-500 dark:text-zinc-500">lifetime credits (never expire)</span>
+                    </div>
+                  )}
                   {status?.currentPeriodEnd && (
                     <p className="text-sm text-zinc-500 dark:text-zinc-500 mt-2">
-                      Credits reset on {formatDate(status.currentPeriodEnd)}
+                      Subscription credits reset on {formatDate(status.currentPeriodEnd)}
                     </p>
                   )}
                 </div>

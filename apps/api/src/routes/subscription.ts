@@ -55,12 +55,13 @@ app.get('/status', (c) => {
     .get(auth.userId) as any
 
   if (!user) {
-    return c.json({ subscribed: false, credits: 0 })
+    return c.json({ subscribed: false, credits: 0, lifetimeCredits: 0 })
   }
 
   return c.json({
     subscribed: user.status === 'active',
     credits: user.credits,
+    lifetimeCredits: user.lifetime_credits || 0,
     currentPeriodEnd: user.currentPeriodEnd,
     cancelAtPeriodEnd: user.cancelAtPeriodEnd === 1,
   })
@@ -269,6 +270,47 @@ app.post('/test-add-credits', async (c) => {
   } catch (error: any) {
     console.error('Add credits error:', error)
     return c.json({ error: 'Failed to add credits', details: error.message }, 500)
+  }
+})
+
+// Add lifetime credits (admin only - requires ADMIN_API_KEY)
+app.post('/add-lifetime-credits', async (c) => {
+  const adminKey = c.req.header('x-admin-key')
+  
+  if (!adminKey || adminKey !== process.env.ADMIN_API_KEY) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    const { clerkUserId, credits } = await c.req.json()
+    
+    if (!clerkUserId) {
+      return c.json({ error: 'clerkUserId required' }, 400)
+    }
+
+    if (!credits || credits < 1) {
+      return c.json({ error: 'credits must be a positive number' }, 400)
+    }
+
+    // Insert or update user with lifetime credits
+    db.prepare(`
+      INSERT INTO users (clerkUserId, lifetime_credits)
+      VALUES (?, ?)
+      ON CONFLICT(clerkUserId) DO UPDATE SET
+        lifetime_credits = lifetime_credits + ?
+    `).run(clerkUserId, credits, credits)
+
+    // Get updated user
+    const user = db.prepare('SELECT clerkUserId, credits, lifetime_credits FROM users WHERE clerkUserId = ?').get(clerkUserId)
+
+    return c.json({ 
+      success: true, 
+      message: `Added ${credits} lifetime credits`,
+      user
+    })
+  } catch (error: any) {
+    console.error('Add lifetime credits error:', error)
+    return c.json({ error: 'Failed to add lifetime credits', details: error.message }, 500)
   }
 })
 

@@ -69,16 +69,22 @@ app.post('/generate', async (c) => {
     }, 400)
   }
 
-  const user = db.prepare('SELECT credits FROM users WHERE clerkUserId = ?')
+  const user = db.prepare('SELECT credits, lifetime_credits FROM users WHERE clerkUserId = ?')
     .get(auth.userId) as any
 
-  if (!user || user.credits < 1) {
+  const totalCredits = (user?.credits || 0) + (user?.lifetime_credits || 0)
+  if (!user || totalCredits < 1) {
     return c.json({ error: 'Insufficient credits' }, 402)
   }
 
-  // Deduct credits immediately
-  db.prepare('UPDATE users SET credits = credits - 1 WHERE clerkUserId = ?')
-    .run(auth.userId)
+  // Deduct from subscription credits first, then lifetime credits
+  if (user.credits > 0) {
+    db.prepare('UPDATE users SET credits = credits - 1 WHERE clerkUserId = ?')
+      .run(auth.userId)
+  } else {
+    db.prepare('UPDATE users SET lifetime_credits = lifetime_credits - 1 WHERE clerkUserId = ?')
+      .run(auth.userId)
+  }
 
   const generationId = crypto.randomUUID()
   
@@ -123,20 +129,23 @@ app.post('/generate', async (c) => {
 
     console.log(`⏳ [PENDING] Prediction ${prediction.id} started, waiting for webhook...`)
 
+    // Calculate remaining credits
+    const creditsRemaining = totalCredits - 1
+
     // Return immediately with pending status
     return c.json({
       success: true,
       generationId,
       status: 'pending',
-      creditsRemaining: user.credits - 1,
+      creditsRemaining,
       message: 'Generation started. Check status using the generation ID.'
     })
 
   } catch (error: any) {
     console.error(`❌ [FAILED] Failed to start generation:`, error.message)
     
-    // Refund credits on failure to start
-    db.prepare('UPDATE users SET credits = credits + 1 WHERE clerkUserId = ?')
+    // Refund credits on failure to start (refund to lifetime_credits pool)
+    db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + 1 WHERE clerkUserId = ?')
       .run(auth.userId)
     
     // Clean up pending generation if it was created
@@ -262,11 +271,11 @@ app.post('/generate/webhook', async (c) => {
       WHERE id = ?
     `).run(generation.id)
     
-    // Refund credits
-    db.prepare('UPDATE users SET credits = credits + 1 WHERE clerkUserId = ?')
+    // Refund credits to lifetime_credits pool
+    db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + 1 WHERE clerkUserId = ?')
       .run(generation.clerkUserId)
     
-    console.log(`💰 [WEBHOOK] Credits refunded to user: ${generation.clerkUserId.substring(0, 8)}...`)
+    console.log(`💰 [WEBHOOK] Credits refunded to lifetime pool for user: ${generation.clerkUserId.substring(0, 8)}...`)
   }
 
   return c.json({ success: true })

@@ -61,6 +61,14 @@ try {
   // Column already exists, ignore error
 }
 
+// Add lifetime_credits column for unexpiring credits
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN lifetime_credits INTEGER DEFAULT 0`)
+  console.log('✅ Migration: Added lifetime_credits column to users table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
 // Fix status for existing generations that have audio URLs but pending status
 try {
   const result = db.exec(`

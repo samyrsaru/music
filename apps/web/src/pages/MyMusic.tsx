@@ -23,6 +23,12 @@ function MyMusic() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+
+  const filteredGenerations = generations.filter(gen => 
+    gen.prompt.toLowerCase().includes(search.toLowerCase()) ||
+    gen.lyrics.toLowerCase().includes(search.toLowerCase())
+  )
 
   useEffect(() => {
     if (isLoaded && userId) fetchGenerations()
@@ -115,9 +121,29 @@ function MyMusic() {
 
         <Show when="signed-in">
           <div>
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold mb-2">Library</h1>
+            <div className="mb-8 flex justify-between items-center">
+              <h1 className="text-3xl font-bold">Library</h1>
+              <Link
+                to="/studio"
+                className="flex items-center gap-2 py-2.5 px-5 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all"
+              >
+                <span className="text-lg">+</span>
+                <span>New Song</span>
+              </Link>
             </div>
+
+            {/* Search */}
+            {generations.length > 0 && (
+              <div className="mb-6">
+                <input
+                  type="text"
+                  placeholder="Search your songs..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                />
+              </div>
+            )}
 
             {/* Error Message */}
             {error && (
@@ -154,9 +180,9 @@ function MyMusic() {
             )}
 
             {/* Generations Grid */}
-            {!loading && generations.length > 0 && (
+            {!loading && filteredGenerations.length > 0 && (
               <div className="grid gap-6 md:grid-cols-2">
-                {generations.map((gen) => (
+                {filteredGenerations.map((gen) => (
                   <div 
                     key={gen.id}
                     className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:border-green-300 dark:hover:border-green-700 transition-all shadow-sm hover:shadow-md"
@@ -289,8 +315,21 @@ function MyMusic() {
               </button>
             </div>
           </div>
-        </div>
-      )}
+              </div>
+            )}
+
+            {/* No Search Results */}
+            {!loading && search && filteredGenerations.length === 0 && generations.length > 0 && (
+              <div className="text-center py-12">
+                <p className="text-zinc-500 dark:text-zinc-400">No songs match "{search}"</p>
+                <button
+                  onClick={() => setSearch('')}
+                  className="mt-2 text-green-500 hover:text-green-600 font-medium"
+                >
+                  Clear search
+                </button>
+              </div>
+            )}
     </div>
   )
 }

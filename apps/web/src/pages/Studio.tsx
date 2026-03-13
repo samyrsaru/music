@@ -303,7 +303,7 @@ function Studio() {
                 <div className="flex flex-col gap-4 pt-2">
                   <button
                     onClick={generateLyricsFromIdea}
-                    disabled={!songIdea.trim() || isGeneratingLyrics || credits < songCost}
+                    disabled={!songIdea.trim() || isGeneratingLyrics}
                     className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
                   >
                     {isGeneratingLyrics ? (
@@ -311,10 +311,8 @@ function Studio() {
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                         Writing Your Song...
                       </span>
-                    ) : credits < songCost ? (
-                      'No Credits - Subscribe to Generate'
                     ) : (
-                      `Write My Lyrics ✍️ (${songCost} credits)`
+                      'Write My Lyrics ✍️'
                     )}
                   </button>
 

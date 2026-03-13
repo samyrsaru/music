@@ -97,41 +97,106 @@ app.post('/polar', async (c) => {
         const sub = event.data
         const clerkUserId = sub.metadata?.clerkUserId
         
-        if (clerkUserId) {
+        // Validate required fields
+        if (!clerkUserId) {
+          console.error('  ❌ Webhook missing clerkUserId in metadata')
+          return c.json({ error: 'Missing clerkUserId in metadata' }, 400)
+        }
+        
+        if (!sub.id || !sub.status || !sub.currentPeriodStart || !sub.currentPeriodEnd) {
+          console.error('  ❌ Webhook missing required subscription fields', {
+            id: sub.id,
+            status: sub.status,
+            currentPeriodStart: sub.currentPeriodStart,
+            currentPeriodEnd: sub.currentPeriodEnd
+          })
+          return c.json({ error: 'Missing required subscription fields' }, 400)
+        }
+        
+        try {
           db.prepare(`
-            INSERT INTO users (clerkUserId, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd)
-            VALUES (?, 100, ?, ?, ?, ?)
+            INSERT INTO users (clerkUserId, credits, polarSubscriptionId, status, currentPeriodStart, currentPeriodEnd, cancelAtPeriodEnd)
+            VALUES (?, 100, ?, ?, ?, ?, 0)
             ON CONFLICT(clerkUserId) DO UPDATE SET
               credits = 100,
               polarSubscriptionId = excluded.polarSubscriptionId,
               status = excluded.status,
               currentPeriodStart = excluded.currentPeriodStart,
-              currentPeriodEnd = excluded.currentPeriodEnd
+              currentPeriodEnd = excluded.currentPeriodEnd,
+              cancelAtPeriodEnd = 0
           `).run(
-            clerkUserId,
-            sub.id,
-            sub.status,
-            sub.currentPeriodStart,
-            sub.currentPeriodEnd
+            String(clerkUserId),
+            String(sub.id),
+            String(sub.status),
+            String(sub.currentPeriodStart),
+            String(sub.currentPeriodEnd)
           )
-          console.log(`  ✅ Activated subscription for user: ${clerkUserId}`)
+          console.log(`  ✅ Activated subscription for user: ${clerkUserId} (sub: ${sub.id})`)
+        } catch (err) {
+          console.error('  ❌ Database error:', err)
+          return c.json({ error: 'Database error' }, 500)
         }
         break
       }
       
       case 'subscription.canceled': {
         const sub = event.data
-        db.prepare(`UPDATE users SET status = 'canceled', cancelAtPeriodEnd = 1 
-                    WHERE polarSubscriptionId = ?`).run(sub.id)
-        console.log(`  🚫 Canceled subscription: ${sub.id}`)
+        
+        // Validate required fields
+        if (!sub.id) {
+          console.error('  ❌ Webhook missing subscription ID')
+          return c.json({ error: 'Missing subscription ID' }, 400)
+        }
+        
+        // Check if this is "cancel at period end" vs immediate cancel
+        const isCancelAtPeriodEnd = sub.cancelAtPeriodEnd === true
+        const newStatus = isCancelAtPeriodEnd ? 'active' : 'canceled'
+        
+        // Ensure endsAt is a string or null (not undefined or boolean)
+        const endsAt = sub.endsAt && typeof sub.endsAt === 'string' ? sub.endsAt : null
+        
+        const result = db.prepare(`
+          UPDATE users 
+          SET status = ?, 
+              cancelAtPeriodEnd = ?,
+              endsAt = ?
+          WHERE polarSubscriptionId = ?
+        `).run(
+          newStatus,
+          isCancelAtPeriodEnd ? 1 : 0,
+          endsAt,
+          String(sub.id)
+        )
+        
+        if (result.changes === 0) {
+          console.warn(`  ⚠️  No user found with subscription ID: ${sub.id}`)
+        } else {
+          console.log(`  🚫 Canceled subscription: ${sub.id} (cancelAtPeriodEnd: ${isCancelAtPeriodEnd}, status: ${newStatus})`)
+        }
         break
       }
       
       case 'subscription.uncanceled': {
         const sub = event.data
-        db.prepare(`UPDATE users SET status = 'active', cancelAtPeriodEnd = 0 
-                    WHERE polarSubscriptionId = ?`).run(sub.id)
-        console.log(`  🔄 Uncanceled subscription: ${sub.id}`)
+        
+        if (!sub.id) {
+          console.error('  ❌ Webhook missing subscription ID')
+          return c.json({ error: 'Missing subscription ID' }, 400)
+        }
+        
+        const result = db.prepare(`
+          UPDATE users 
+          SET status = 'active', 
+              cancelAtPeriodEnd = 0,
+              endsAt = NULL
+          WHERE polarSubscriptionId = ?
+        `).run(String(sub.id))
+        
+        if (result.changes === 0) {
+          console.warn(`  ⚠️  No user found with subscription ID: ${sub.id}`)
+        } else {
+          console.log(`  🔄 Uncanceled subscription: ${sub.id}`)
+        }
         break
       }
       
@@ -139,35 +204,74 @@ app.post('/polar', async (c) => {
         const sub = event.data
         const clerkUserId = sub.metadata?.clerkUserId
         
-        if (clerkUserId) {
-          db.prepare(`
-            UPDATE users 
-            SET status = ?, currentPeriodEnd = ?, cancelAtPeriodEnd = ?
-            WHERE clerkUserId = ?
-          `).run(
-            sub.status,
-            sub.currentPeriodEnd,
-            sub.cancelAtPeriodEnd ? 1 : 0,
-            clerkUserId
-          )
-          console.log(`  📝 Updated subscription for user: ${clerkUserId}`)
+        if (!clerkUserId) {
+          console.error('  ❌ Webhook missing clerkUserId in metadata')
+          return c.json({ error: 'Missing clerkUserId in metadata' }, 400)
+        }
+        
+        if (!sub.status || !sub.currentPeriodEnd) {
+          console.error('  ❌ Webhook missing required fields for update')
+          return c.json({ error: 'Missing required fields' }, 400)
+        }
+        
+        const result = db.prepare(`
+          UPDATE users 
+          SET status = ?, 
+              currentPeriodEnd = ?, 
+              cancelAtPeriodEnd = ?,
+              endsAt = ?
+          WHERE clerkUserId = ?
+        `).run(
+          String(sub.status),
+          String(sub.currentPeriodEnd),
+          sub.cancelAtPeriodEnd ? 1 : 0,
+          sub.endsAt && typeof sub.endsAt === 'string' ? sub.endsAt : null,
+          String(clerkUserId)
+        )
+        
+        if (result.changes === 0) {
+          console.warn(`  ⚠️  No user found with clerkUserId: ${clerkUserId}`)
+        } else {
+          console.log(`  📝 Updated subscription for user: ${clerkUserId} (status: ${sub.status}, cancelAtPeriodEnd: ${sub.cancelAtPeriodEnd})`)
         }
         break
       }
       
       case 'subscription.past_due': {
         const sub = event.data
-        db.prepare(`UPDATE users SET status = 'past_due' 
-                    WHERE polarSubscriptionId = ?`).run(sub.id)
-        console.log(`  ⚠️  Subscription past due: ${sub.id}`)
+        
+        if (!sub.id) {
+          console.error('  ❌ Webhook missing subscription ID')
+          return c.json({ error: 'Missing subscription ID' }, 400)
+        }
+        
+        const result = db.prepare(`UPDATE users SET status = 'past_due' 
+                    WHERE polarSubscriptionId = ?`).run(String(sub.id))
+        
+        if (result.changes === 0) {
+          console.warn(`  ⚠️  No user found with subscription ID: ${sub.id}`)
+        } else {
+          console.log(`  ⚠️  Subscription past due: ${sub.id}`)
+        }
         break
       }
       
       case 'subscription.revoked': {
         const sub = event.data
-        db.prepare(`UPDATE users SET status = 'revoked' 
-                    WHERE polarSubscriptionId = ?`).run(sub.id)
-        console.log(`  🗑️  Subscription revoked: ${sub.id}`)
+        
+        if (!sub.id) {
+          console.error('  ❌ Webhook missing subscription ID')
+          return c.json({ error: 'Missing subscription ID' }, 400)
+        }
+        
+        const result = db.prepare(`UPDATE users SET status = 'revoked' 
+                    WHERE polarSubscriptionId = ?`).run(String(sub.id))
+        
+        if (result.changes === 0) {
+          console.warn(`  ⚠️  No user found with subscription ID: ${sub.id}`)
+        } else {
+          console.log(`  🗑️  Subscription revoked: ${sub.id}`)
+        }
         break
       }
       

@@ -53,6 +53,14 @@ try {
   // Column already exists, ignore error
 }
 
+// Add endsAt column to users table for tracking subscription end date when canceled
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN endsAt TEXT`)
+  console.log('✅ Migration: Added endsAt column to users table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
 // Fix status for existing generations that have audio URLs but pending status
 try {
   const result = db.exec(`

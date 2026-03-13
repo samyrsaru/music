@@ -30,6 +30,16 @@ function Song() {
     if (isLoaded && userId && id) fetchGeneration()
   }, [isLoaded, userId, id])
 
+  useEffect(() => {
+    if (!generation || generation.status !== 'pending') return
+    
+    const interval = setInterval(() => {
+      fetchGeneration()
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [generation?.status])
+
   const fetchGeneration = async () => {
     try {
       const res = await fetchWithAuth(`${API_URL}/api/generations/${id}`)

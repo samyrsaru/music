@@ -329,10 +329,6 @@ function Studio() {
                     {error}
                   </div>
                 )}
-
-                <p className="text-center text-sm text-zinc-500 dark:text-zinc-500">
-                  {credits} credits remaining (~{Math.floor(credits / songCost)} songs)
-                </p>
               </div>
             </div>
           )}
@@ -457,8 +453,8 @@ function Studio() {
                     )}
                 </button>
 
-                <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                  {credits} credits remaining (~{Math.floor(credits / songCost)} songs)
+                <p className="text-xs text-zinc-400 dark:text-zinc-600">
+                  {credits} credits remaining
                 </p>
               </div>
 

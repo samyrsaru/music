@@ -177,8 +177,8 @@ function Home() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
       {/* Navigation */}
       <nav className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 flex justify-between items-center sticky top-0 bg-zinc-50/80 dark:bg-zinc-950/80 backdrop-blur-sm z-50">
-        <Link to="/">
-          <img src="/logo.png" alt="Sound like a Hero" className="h-10 w-auto" />
+        <Link to="/" className="text-xl font-semibold tracking-tight">
+          <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
         </Link>
         <div className="flex items-center gap-4">
           <ThemeToggle />

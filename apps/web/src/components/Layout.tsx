@@ -11,8 +11,8 @@ export function Header() {
   return (
     <nav className="border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-4">
       <div className="flex justify-between items-center">
-        <Link to={isSignedIn ? "/studio" : "/"}>
-          <img src="/logo.png" alt="Sound like a Hero" className="h-10 w-auto" />
+        <Link to={isSignedIn ? "/studio" : "/"} className="text-xl font-semibold tracking-tight">
+          <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
         </Link>
 
         {/* Desktop Navigation */}

@@ -8,13 +8,13 @@ function NotFound() {
       {/* Navigation */}
       <nav className="border-b border-zinc-200 dark:border-zinc-800 px-6 py-4 flex justify-between items-center">
         <Show when="signed-in">
-          <Link to="/studio">
-            <img src="/logo.png" alt="Sound like a Hero" className="h-10 w-auto" />
+          <Link to="/studio" className="text-xl font-semibold tracking-tight">
+            <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
           </Link>
         </Show>
         <Show when="signed-out">
-          <Link to="/">
-            <img src="/logo.png" alt="Sound like a Hero" className="h-10 w-auto" />
+          <Link to="/" className="text-xl font-semibold tracking-tight">
+            <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
           </Link>
         </Show>
         <div className="flex items-center gap-4">

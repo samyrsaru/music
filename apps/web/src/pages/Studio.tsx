@@ -599,13 +599,20 @@ function Studio() {
                       }}
                     />
                     <div className="flex gap-3">
-                      <a
-                        href={audioUrl}
-                        download={`song-${generationId}.mp3`}
-                        className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold rounded-xl transition-all text-center"
+                      <button
+                        onClick={() => {
+                          const link = document.createElement('a')
+                          link.href = audioUrl
+                          link.download = `song-${generationId}.mp3`
+                          link.style.display = 'none'
+                          document.body.appendChild(link)
+                          link.click()
+                          document.body.removeChild(link)
+                        }}
+                        className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold rounded-xl transition-all"
                       >
                         Download ↓
-                      </a>
+                      </button>
                       <button 
                         onClick={() => navigate(`/song/${generationId}`)}
                         className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"

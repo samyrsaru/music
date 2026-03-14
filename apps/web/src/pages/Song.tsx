@@ -328,10 +328,14 @@ function Song() {
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
                       onClick={() => {
-                        console.log('Download clicked - name:', generation.name, 'prompt:', generation.prompt)
                         const filename = `${generation.name?.trim() || generation.prompt || 'makemusic'}.mp3`
-                        console.log('Filename:', filename)
-                        window.open(generation.audioUrl, '_blank')
+                        const link = document.createElement('a')
+                        link.href = generation.audioUrl
+                        link.download = filename
+                        link.style.display = 'none'
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
                       }}
                       className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
                     >

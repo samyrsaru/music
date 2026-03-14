@@ -415,6 +415,9 @@ function Home() {
             </Link>
             <span>© 2025 MakeMusic. All rights reserved.</span>
           </div>
+          <div className="mt-2 text-xs text-zinc-400 dark:text-zinc-600">
+            Music generated using AI technology
+          </div>
         </div>
       </footer>
     </div>

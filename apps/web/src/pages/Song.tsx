@@ -58,30 +58,15 @@ function Song() {
     }
   }
 
-  const downloadAudio = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url, { mode: 'cors' })
-      if (!response.ok) throw new Error('Fetch failed')
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      link.type = 'audio/mpeg'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-    } catch (err) {
-      console.error('Download failed:', err)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
+  const downloadAudio = (url: string, filename: string) => {
+    const safeName = filename.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim() || 'makemusic'
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${safeName}.mp3`
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const goToStudioWithPreset = () => {
@@ -242,7 +227,7 @@ function Song() {
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4">
                     <button
-                      onClick={() => downloadAudio(generation.audioUrl, `makemusic-${generation.id}.mp3`)}
+                      onClick={() => downloadAudio(generation.audioUrl, `${generation.name || generation.prompt || 'makemusic'}.mp3`)}
                       className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

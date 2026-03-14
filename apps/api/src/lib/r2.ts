@@ -60,6 +60,7 @@ export async function getSignedAudioUrl(
   const command = new GetObjectCommand({
     Bucket: R2_BUCKET_NAME,
     Key: key,
+    ResponseContentDisposition: 'attachment; filename="makemusic.mp3"',
   })
 
   const signedUrl = await getSignedUrl(r2Client, command, {

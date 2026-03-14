@@ -130,30 +130,15 @@ function Studio() {
     setName('')
   }
 
-  const downloadAudio = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url, { mode: 'cors' })
-      if (!response.ok) throw new Error('Fetch failed')
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      link.type = 'audio/mpeg'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-    } catch (err) {
-      console.error('Download failed:', err)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = filename
-      link.target = '_blank'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    }
+  const downloadAudio = (url: string, filename: string) => {
+    const safeName = filename.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim() || 'makemusic'
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${safeName}.mp3`
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
   }
 
   const pollGenerationStatus = async (id: string) => {
@@ -553,7 +538,7 @@ function Studio() {
                       }}
                     />
                     <button 
-                      onClick={() => downloadAudio(audioUrl, 'makemusic-generation.mp3')}
+                      onClick={() => downloadAudio(audioUrl, `${name || 'makemusic-generation'}.mp3`)}
                       className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all"
                     >
                       Download

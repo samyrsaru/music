@@ -404,18 +404,15 @@ function Home() {
       {/* Footer */}
       <footer className="border-t border-zinc-200 dark:border-zinc-800 px-6 py-8">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl font-semibold tracking-tight">
-              <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
-            </span>
-          </div>
           <div className="flex items-center gap-6 text-sm text-zinc-500 dark:text-zinc-500">
             <Link to="/privacy" className="hover:text-green-500 dark:hover:text-green-400 transition-colors">
               Privacy Policy
             </Link>
-            <span>© 2026</span>
           </div>
-          <div className="mt-2 text-xs text-zinc-400 dark:text-zinc-600">
+          <div className="text-sm text-zinc-500 dark:text-zinc-500">
+            © 2026 <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>. All rights reserved.
+          </div>
+          <div className="text-xs text-zinc-400 dark:text-zinc-600">
             Music generated using AI technology
           </div>
         </div>

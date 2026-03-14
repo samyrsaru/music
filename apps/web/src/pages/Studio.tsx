@@ -6,6 +6,34 @@ import { useApi } from '../hooks/useApi'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
+// Blob animation keyframes
+const blobStyles = `
+  @keyframes blob-morph {
+    0%, 100% {
+      border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+    }
+    25% {
+      border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+    }
+    50% {
+      border-radius: 50% 60% 30% 60% / 30% 50% 70% 40%;
+    }
+    75% {
+      border-radius: 60% 40% 60% 30% / 70% 40% 50% 60%;
+    }
+  }
+  @keyframes blob-pulse {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 0.2;
+    }
+    50% {
+      transform: scale(1.1);
+      opacity: 0.3;
+    }
+  }
+`
+
 interface ModelConfig {
   id: string
   cost: number
@@ -32,8 +60,19 @@ function Studio() {
   const [modelConfig, setModelConfig] = useState<ModelConfig | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
-  const [skipReview, setSkipReview] = useState(false)
+  const [skipReview, setSkipReview] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app-settings-skip-review')
+      return saved ? JSON.parse(saved) : false
+    }
+    return false
+  })
   const navigate = useNavigate()
+
+  // Save skipReview preference to localStorage
+  useEffect(() => {
+    localStorage.setItem('app-settings-skip-review', JSON.stringify(skipReview))
+  }, [skipReview])
 
   // Check for pre-filled lyrics and style from URL params
   useEffect(() => {
@@ -228,6 +267,7 @@ function Studio() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
+      <style>{blobStyles}</style>
       <main className="max-w-4xl mx-auto px-6 py-12">
         <Show when="signed-out">
           <div className="text-center py-20">
@@ -327,7 +367,41 @@ function Studio() {
           {/* Loading State */}
           {step === 'generating' && (
             <div className="max-w-2xl mx-auto text-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent mx-auto mb-6"></div>
+              {/* Liquid Morphing Blob */}
+              <div className="relative w-32 h-32 mx-auto mb-8">
+                {/* Main blob */}
+                <div 
+                  className="absolute inset-0 bg-gradient-to-br from-green-400 via-green-500 to-green-600 opacity-90"
+                  style={{
+                    borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
+                    animation: 'blob-morph 4s ease-in-out infinite'
+                  }}
+                />
+                {/* Secondary blob */}
+                <div 
+                  className="absolute inset-2 bg-gradient-to-br from-green-300 via-green-400 to-green-500 opacity-70"
+                  style={{
+                    borderRadius: '40% 60% 70% 30% / 40% 70% 30% 60%',
+                    animation: 'blob-morph 4s ease-in-out infinite reverse'
+                  }}
+                />
+                {/* Inner blob */}
+                <div 
+                  className="absolute inset-4 bg-gradient-to-br from-green-200 via-green-300 to-green-400 opacity-60"
+                  style={{
+                    borderRadius: '30% 70% 60% 40% / 70% 40% 60% 30%',
+                    animation: 'blob-morph 3s ease-in-out infinite'
+                  }}
+                />
+                {/* Glow effect */}
+                <div 
+                  className="absolute -inset-4 bg-green-500 opacity-20 blur-xl"
+                  style={{
+                    borderRadius: '50%',
+                    animation: 'blob-pulse 3s ease-in-out infinite'
+                  }}
+                />
+              </div>
               <h2 className="text-2xl font-bold mb-2">Writing your masterpiece...</h2>
               <p className="text-zinc-600 dark:text-zinc-400">This will just take a moment</p>
             </div>

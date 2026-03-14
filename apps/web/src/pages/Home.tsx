@@ -413,7 +413,7 @@ function Home() {
             <Link to="/privacy" className="hover:text-green-500 dark:hover:text-green-400 transition-colors">
               Privacy Policy
             </Link>
-            <span>© 2026 <span className="text-green-500 font-bold">sound</span>.likeahe.ro</span>
+            <span>© 2026</span>
           </div>
           <div className="mt-2 text-xs text-zinc-400 dark:text-zinc-600">
             Music generated using AI technology

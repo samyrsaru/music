@@ -36,7 +36,7 @@ app.post('/generate', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { lyrics, prompt, name } = await c.req.json()
+  const { lyrics, prompt } = await c.req.json()
   
   // Server-side validation using model constraints
   const lyricsLength = lyrics?.length || 0
@@ -99,12 +99,67 @@ app.post('/generate', async (c) => {
   console.log(`   Lyrics: ${lyrics.substring(0, 50)}...`)
   console.log(`   Prompt: ${prompt || 'pop music'}`)
 
+  // Generate song name based on lyrics
+  console.log(`🎵 [NAME] Generating name from lyrics...`)
+  
+  let generatedName: string
+  
+  try {
+    const namePrompt = `[INST] Based on these song lyrics, generate a short, catchy song title (2-6 words).
+The title should capture the essence of the song. Be creative but concise.
+Examples: "Summer Nights", "Lost in You", "Electric Dreams", "Rainy Day Blues"
+
+Lyrics:
+${lyrics.substring(0, 500)}
+
+STRICT: Return ONLY the title text. NO quotes. NO explanations. Just the title. [/INST]`
+
+    const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+      input: {
+        prompt: namePrompt,
+        max_tokens: 50,
+        temperature: 0.8,
+        system_prompt: "You are a songwriting assistant. You create catchy song titles. Never use quotes or introductions. Just output the title directly."
+      }
+    }) as any
+    
+    if (typeof nameOutput === 'string') {
+      generatedName = nameOutput
+    } else if (Array.isArray(nameOutput) && nameOutput.length > 0) {
+      generatedName = nameOutput.join('')
+    } else if (nameOutput && typeof nameOutput === 'object') {
+      generatedName = nameOutput.output || nameOutput.text || String(nameOutput)
+    } else {
+      generatedName = String(nameOutput)
+    }
+
+    // Clean up the name
+    generatedName = generatedName.trim()
+    generatedName = generatedName.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
+    generatedName = generatedName.replace(/^["']+|["']+$/g, '').trim()
+    
+    // Fallback if name is too short or empty
+    if (generatedName.length < 2) {
+      generatedName = prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
+    }
+    
+    // Limit length
+    if (generatedName.length > 60) {
+      generatedName = generatedName.substring(0, 60)
+    }
+    
+    console.log(`✅ [NAME] Generated: "${generatedName}"`)
+  } catch (nameError: any) {
+    console.error(`❌ [NAME] Generation failed:`, nameError.message)
+    generatedName = prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
+  }
+
   try {
     // Create pending generation record
     db.prepare(`
       INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, status, createdAt)
       VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', name || null)
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName)
 
     // Start async generation with webhook
     const input = {
@@ -608,6 +663,33 @@ app.delete('/:id', async (c) => {
   console.log(`🗑️ Deleted generation ${id} for user: ${auth.userId.substring(0, 8)}...`)
 
   return c.json({ success: true, message: 'Generation deleted' })
+})
+
+// Update generation name
+app.patch('/:id/name', async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  const { name } = await c.req.json()
+  
+  if (!name || typeof name !== 'string') {
+    return c.json({ error: 'Name is required' }, 400)
+  }
+
+  const trimmedName = name.trim().substring(0, 60)
+  
+  const result = db.prepare(`
+    UPDATE generations SET name = ? WHERE id = ? AND clerkUserId = ?
+  `).run(trimmedName, id, auth.userId)
+
+  if (result.changes === 0) {
+    return c.json({ error: 'Generation not found' }, 404)
+  }
+
+  console.log(`✏️ Updated name for generation ${id}: "${trimmedName}"`)
+
+  return c.json({ success: true, name: trimmedName })
 })
 
 export default app

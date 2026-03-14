@@ -26,6 +26,13 @@ function Song() {
   const [error, setError] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [editedName, setEditedName] = useState('')
+  const [isSavingName, setIsSavingName] = useState(false)
+  const [nameError, setNameError] = useState('')
+
+  const NAME_MIN_LENGTH = 1
+  const NAME_MAX_LENGTH = 60
 
   useEffect(() => {
     if (isLoaded && userId && id) fetchGeneration()
@@ -94,6 +101,50 @@ function Song() {
       minute: '2-digit',
       hour12: false
     })
+  }
+
+  const saveName = async () => {
+    const trimmed = editedName.trim()
+    
+    if (trimmed.length < NAME_MIN_LENGTH) {
+      setNameError(`Name must be at least ${NAME_MIN_LENGTH} character`)
+      return
+    }
+    if (trimmed.length > NAME_MAX_LENGTH) {
+      setNameError(`Name must be less than ${NAME_MAX_LENGTH} characters`)
+      return
+    }
+    
+    setNameError('')
+    if (!id) return
+    
+    setIsSavingName(true)
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/${id}/name`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: editedName.trim() })
+      })
+      
+      if (res.ok) {
+        setGeneration({ ...generation!, name: editedName.trim() })
+        setIsEditingName(false)
+      }
+    } catch (err) {
+      console.error('Failed to save name:', err)
+    } finally {
+      setIsSavingName(false)
+    }
+  }
+
+  const startEditingName = () => {
+    setEditedName(generation?.name || '')
+    setIsEditingName(true)
+  }
+
+  const cancelEditingName = () => {
+    setIsEditingName(false)
+    setEditedName('')
   }
 
   const deleteGeneration = async () => {
@@ -173,7 +224,65 @@ function Song() {
                   >
                     ← Back to Library
                   </Link>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{generation.name || generation.prompt}</h1>
+                {isEditingName ? (
+                  <div className="mb-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={editedName}
+                        onChange={(e) => {
+                          setEditedName(e.target.value)
+                          setNameError('')
+                        }}
+                        className="text-3xl md:text-4xl font-bold bg-transparent border-b-2 border-green-500 focus:outline-none w-full"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') saveName()
+                          if (e.key === 'Escape') cancelEditingName()
+                        }}
+                      />
+                      <button
+                        onClick={saveName}
+                        disabled={isSavingName}
+                        className="text-green-500 hover:text-green-600 disabled:opacity-50"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={cancelEditingName}
+                        className="text-zinc-500 hover:text-zinc-600"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      {nameError ? (
+                        <p className="text-sm text-red-500">{nameError}</p>
+                      ) : (
+                        <span></span>
+                      )}
+                      <span className="text-sm text-zinc-500">
+                        {editedName.length} / {NAME_MAX_LENGTH}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h1 className="text-3xl md:text-4xl font-bold mb-2">{generation.name || generation.prompt}</h1>
+                    <button
+                      onClick={startEditingName}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-green-500 transition-opacity mb-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <p className="text-zinc-500 dark:text-zinc-500">
                   Created on {formatDate(generation.createdAt)}
                 </p>

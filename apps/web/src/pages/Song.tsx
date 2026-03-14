@@ -65,24 +65,6 @@ function Song() {
     }
   }
 
-  const downloadAudio = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url, { mode: 'cors' })
-      if (!response.ok) throw new Error('Fetch failed')
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-    } catch (err) {
-      console.error('Download failed:', err)
-    }
-  }
-
   const goToStudioWithPreset = () => {
     if (!generation) return
     const params = new URLSearchParams({
@@ -342,15 +324,16 @@ function Song() {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      onClick={() => downloadAudio(generation.audioUrl, `${generation.name || generation.prompt || 'makemusic'}.mp3`)}
+                    <a
+                      href={generation.audioUrl}
+                      download={`${generation.name || generation.prompt || 'makemusic'}.mp3`}
                       className="flex-1 py-4 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all flex items-center justify-center gap-2"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                       Download
-                    </button>
+                    </a>
                     <button
                       onClick={goToStudioWithPreset}
                       className="flex-1 py-4 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"

@@ -75,24 +75,6 @@ function MyMusic() {
     }
   }
 
-  const downloadAudio = async (url: string, filename: string) => {
-    try {
-      const response = await fetch(url, { mode: 'cors' })
-      if (!response.ok) throw new Error('Fetch failed')
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = filename
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-    } catch (err) {
-      console.error('Download failed:', err)
-    }
-  }
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr + 'Z').toLocaleString(undefined, {
       month: 'short',
@@ -255,16 +237,16 @@ function MyMusic() {
                           />
 
                           <div className="flex gap-3">
-                            <button
+                            <a
+                              href={gen.audioUrl}
+                              download={`${gen.name || gen.prompt || 'makemusic'}.mp3`}
                               onClick={(e) => {
-                                e.preventDefault()
                                 e.stopPropagation()
-                                downloadAudio(gen.audioUrl, `${gen.name || gen.prompt || 'makemusic'}.mp3`)
                               }}
-                              className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all"
+                              className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-center"
                             >
                               Download
-                            </button>
+                            </a>
                           </div>
                         </>
                       )}

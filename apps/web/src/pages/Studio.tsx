@@ -23,6 +23,7 @@ function Studio() {
   const [songIdea, setSongIdea] = useState('')
   const [lyrics, setLyrics] = useState('')
   const [prompt, setPrompt] = useState('')
+  const [name, setName] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
@@ -98,6 +99,9 @@ function Studio() {
         if (data.style) {
           setPrompt(data.style)
         }
+        if (data.name) {
+          setName(data.name)
+        }
         setStep('lyrics')
       } else if (data.error) {
         setError(data.error)
@@ -121,6 +125,7 @@ function Studio() {
     setGenerationStatus('idle')
     setGenerationId(null)
     setAudioUrl(null)
+    setName('')
   }
 
   const downloadAudio = async (url: string, filename: string) => {
@@ -186,7 +191,8 @@ function Studio() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lyrics,
-          prompt
+          prompt,
+          name: name.trim() || undefined
         })
       })
       
@@ -339,6 +345,30 @@ function Studio() {
 
               {/* Lyrics & Style Section */}
               <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-6 shadow-sm">
+                {/* Song Name */}
+                <div className="mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <label htmlFor="name" className="block font-semibold text-lg">
+                      Song Name
+                    </label>
+                    <span className="text-sm text-zinc-500 dark:text-zinc-500">
+                      Auto-generated, edit as you like
+                    </span>
+                  </div>
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Enter song name..."
+                    disabled={isGenerating}
+                    className="w-full px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:opacity-50 transition-all"
+                  />
+                </div>
+
+                {/* Divider */}
+                <div className="border-t border-zinc-200 dark:border-zinc-800 my-6"></div>
+
                 {/* Lyrics */}
                 <div className="mb-6">
                   <div className="flex justify-between items-center mb-4">

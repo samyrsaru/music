@@ -8,6 +8,7 @@ interface Generation {
   id: string
   lyrics: string
   prompt: string
+  name?: string
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
   createdAt: string
@@ -172,7 +173,7 @@ function Song() {
                   >
                     ← Back to Library
                   </Link>
-                <h1 className="text-3xl md:text-4xl font-bold mb-2">{generation.prompt}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold mb-2">{generation.name || generation.prompt}</h1>
                 <p className="text-zinc-500 dark:text-zinc-500">
                   Created on {formatDate(generation.createdAt)}
                 </p>

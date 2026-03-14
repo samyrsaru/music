@@ -8,6 +8,7 @@ interface Generation {
   id: string
   lyrics: string
   prompt: string
+  name?: string
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
   createdAt: string
@@ -193,8 +194,8 @@ function MyMusic() {
                           <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-1">
                             {formatDate(gen.createdAt)}
                           </p>
-                          <h3 className="font-semibold text-lg leading-tight" title={gen.prompt}>
-                            {gen.prompt}
+                          <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt}>
+                            {gen.name || gen.prompt}
                           </h3>
                         </div>
                         <button

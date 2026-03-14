@@ -36,7 +36,7 @@ app.post('/generate', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { lyrics, prompt } = await c.req.json()
+  const { lyrics, prompt, name } = await c.req.json()
   
   // Server-side validation using model constraints
   const lyricsLength = lyrics?.length || 0
@@ -102,9 +102,9 @@ app.post('/generate', async (c) => {
   try {
     // Create pending generation record
     db.prepare(`
-      INSERT INTO generations (id, clerkUserId, lyrics, prompt, status, createdAt)
-      VALUES (?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music')
+      INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, status, createdAt)
+      VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', name || null)
 
     // Start async generation with webhook
     const input = {
@@ -295,7 +295,7 @@ app.get('/status/:id', async (c) => {
   const id = c.req.param('id')
   
   const generation = db.prepare(`
-    SELECT id, status, audioUrl, r2Key, lyrics, prompt, createdAt, completedAt, replicateId
+    SELECT id, status, audioUrl, r2Key, lyrics, prompt, name, createdAt, completedAt, replicateId
     FROM generations 
     WHERE id = ? AND clerkUserId = ?
   `).get(id, auth.userId) as any
@@ -321,6 +321,7 @@ app.get('/status/:id', async (c) => {
     audioUrl: signedUrl,
     lyrics: generation.lyrics,
     prompt: generation.prompt,
+    name: generation.name,
     createdAt: generation.createdAt,
     completedAt: generation.completedAt,
     replicateId: generation.replicateId
@@ -435,13 +436,63 @@ STRICT: Return ONLY the style description text. NO quotes. NO introductions. Jus
       generatedStyle = `${mood || 'Upbeat'} ${topic.split(' ').slice(0, 3).join(' ')} style music`
     }
 
+    // Generate song name based on lyrics
+    console.log(`🎵 [NAME] Generating name from lyrics...`)
+    
+    const namePrompt = `[INST] Based on these song lyrics, generate a short, catchy song title (2-6 words).
+The title should capture the essence of the song. Be creative but concise.
+Examples: "Summer Nights", "Lost in You", "Electric Dreams", "Rainy Day Blues"
+
+Lyrics:
+${generatedLyrics.substring(0, 500)}
+
+STRICT: Return ONLY the title text. NO quotes. NO explanations. Just the title. [/INST]`
+
+    const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+      input: {
+        prompt: namePrompt,
+        max_tokens: 50,
+        temperature: 0.8,
+        system_prompt: "You are a songwriting assistant. You create catchy song titles. Never use quotes or introductions. Just output the title directly."
+      }
+    }) as any
+
+    let generatedName: string
+    
+    if (typeof nameOutput === 'string') {
+      generatedName = nameOutput
+    } else if (Array.isArray(nameOutput) && nameOutput.length > 0) {
+      generatedName = nameOutput.join('')
+    } else if (nameOutput && typeof nameOutput === 'object') {
+      generatedName = nameOutput.output || nameOutput.text || String(nameOutput)
+    } else {
+      generatedName = String(nameOutput)
+    }
+
+    // Clean up the name
+    generatedName = generatedName.trim()
+    generatedName = generatedName.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
+    generatedName = generatedName.replace(/^["']+|["']+$/g, '').trim()
+    
+    // Fallback if name is too short or empty
+    if (generatedName.length < 2) {
+      generatedName = topic.split(' ').slice(0, 4).join(' ')
+    }
+    
+    // Limit length
+    if (generatedName.length > 60) {
+      generatedName = generatedName.substring(0, 60)
+    }
+
     console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)
     console.log(`✅ [STYLE] Generated: "${generatedStyle}"`)
+    console.log(`✅ [NAME] Generated: "${generatedName}"`)
 
     return c.json({
       success: true,
       lyrics: generatedLyrics,
-      style: generatedStyle
+      style: generatedStyle,
+      name: generatedName
     })
   } catch (error: any) {
     console.error(`❌ [LYRICS] Generation error:`, error.message)
@@ -455,7 +506,7 @@ app.get('/', async (c) => {
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   const generations = db.prepare(`
-    SELECT id, lyrics, prompt, audioUrl, r2Key, status, createdAt 
+    SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, createdAt 
     FROM generations 
     WHERE clerkUserId = ? 
     ORDER BY createdAt DESC

@@ -3,9 +3,11 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const dbPath = path.join(__dirname, '../../main.db')
+const dbPath = process.env.DATABASE_PATH || path.join(__dirname, '../../main.db')
 
 const db: DatabaseType = new Database(dbPath)
+
+console.log(`📁 Using database: ${dbPath}`)
 
 // Initialize schema
 db.exec(`
@@ -65,6 +67,14 @@ try {
 try {
   db.exec(`ALTER TABLE users ADD COLUMN lifetime_credits INTEGER DEFAULT 0`)
   console.log('✅ Migration: Added lifetime_credits column to users table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
+// Add name column to generations table for custom song names
+try {
+  db.exec(`ALTER TABLE generations ADD COLUMN name TEXT`)
+  console.log('✅ Migration: Added name column to generations table')
 } catch (err) {
   // Column already exists, ignore error
 }

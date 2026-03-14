@@ -69,7 +69,7 @@ function Home() {
     {
       icon: '🎬',
       title: 'Perfect for Content Creators',
-      description: 'Create original background music for your YouTube vlogs, podcasts, TikToks, and videos — no copyright strikes, ever.'
+      description: 'Create original background music for your YouTube vlogs, podcasts, TikToks, and videos.'
     }
   ]
 

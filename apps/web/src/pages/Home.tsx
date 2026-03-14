@@ -406,7 +406,7 @@ function Home() {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-xl font-semibold tracking-tight">
-              <span className="text-green-500">Sound</span> like a Hero
+              <span className="text-green-500 font-bold">sound</span><span className="text-zinc-900 dark:text-zinc-100">.likeahe.ro</span>
             </span>
           </div>
           <div className="flex items-center gap-6 text-sm text-zinc-500 dark:text-zinc-500">

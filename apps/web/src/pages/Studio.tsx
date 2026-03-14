@@ -67,6 +67,7 @@ function Studio() {
     }
     return false
   })
+  const [startingCheckout, setStartingCheckout] = useState(false)
   const navigate = useNavigate()
 
   // Save skipReview preference to localStorage
@@ -168,6 +169,25 @@ function Studio() {
     setGenerationStatus('idle')
     setGenerationId(null)
     setAudioUrl(null)
+  }
+
+  const startCheckout = async () => {
+    setStartingCheckout(true)
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/subscription/checkout`, {
+        method: 'POST'
+      })
+      const { checkoutUrl, error } = await res.json()
+      if (error) {
+        setError(error)
+      } else if (checkoutUrl) {
+        window.location.href = checkoutUrl
+      }
+    } catch (err) {
+      setError('Failed to start checkout')
+    } finally {
+      setStartingCheckout(false)
+    }
   }
 
   const pollGenerationStatus = async (id: string) => {
@@ -320,39 +340,60 @@ function Studio() {
                 </div>
 
                 <div className="flex flex-col gap-4 pt-2">
-                  <button
-                    onClick={generateLyricsFromIdea}
-                    disabled={!songIdea.trim() || isGeneratingLyrics}
-                    className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
-                  >
-                    {isGeneratingLyrics ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                        Writing Your Song...
-                      </span>
-                    ) : (
-                      skipReview ? 'Surprise Me' : 'Write My Lyrics ✍️'
-                    )}
-                  </button>
+                  {credits + lifetimeCredits < songCost ? (
+                    <button
+                      onClick={startCheckout}
+                      disabled={startingCheckout}
+                      className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
+                    >
+                      {startingCheckout ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          Redirecting to checkout...
+                        </span>
+                      ) : (
+                        'Get Credits to Generate'
+                      )}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={generateLyricsFromIdea}
+                      disabled={!songIdea.trim() || isGeneratingLyrics}
+                      className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
+                    >
+                      {isGeneratingLyrics ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                          Writing Your Song...
+                        </span>
+                      ) : (
+                        skipReview ? 'Surprise Me' : 'Write My Lyrics ✍️'
+                      )}
+                    </button>
+                  )}
 
-                  <div className="flex items-center justify-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={skipReview}
-                        onChange={(e) => setSkipReview(e.target.checked)}
-                        className="w-4 h-4 rounded border-zinc-300 text-green-500 focus:ring-green-500"
-                      />
-                      <span className="text-sm text-zinc-600 dark:text-zinc-400">Skip review & generate directly</span>
-                    </label>
-                  </div>
+                  {credits + lifetimeCredits >= songCost && (
+                    <>
+                      <div className="flex items-center justify-center gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={skipReview}
+                            onChange={(e) => setSkipReview(e.target.checked)}
+                            className="w-4 h-4 rounded border-zinc-300 text-green-500 focus:ring-green-500"
+                          />
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">Skip review & generate directly</span>
+                        </label>
+                      </div>
 
-                  <button
-                    onClick={goToLyricsDirectly}
-                    className="text-zinc-500 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 text-sm font-medium transition-colors"
-                  >
-                    I already have lyrics →
-                  </button>
+                      <button
+                        onClick={goToLyricsDirectly}
+                        className="text-zinc-500 dark:text-zinc-400 hover:text-green-500 dark:hover:text-green-400 text-sm font-medium transition-colors"
+                      >
+                        I already have lyrics →
+                      </button>
+                    </>
+                  )}
                 </div>
 
                 {error && (
@@ -523,22 +564,37 @@ function Studio() {
 
               {/* Generate Button */}
               <div className="flex flex-col items-center gap-4">
-                <button
-                  onClick={handleGenerate}
-                  disabled={isGenerating || (credits + lifetimeCredits) < songCost || !canGenerate}
-                  className="w-full max-w-md py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
-                >
-                  {isGenerating ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
-                      {generationStatus === 'pending' ? 'Waiting for AI...' : 'Crafting Your Track...'}
-                    </span>
-                  ) : credits + lifetimeCredits < songCost ? (
-                      'No Credits - Subscribe to Generate'
+                {credits + lifetimeCredits < songCost ? (
+                  <button
+                    onClick={startCheckout}
+                    disabled={startingCheckout}
+                    className="w-full max-w-md py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
+                  >
+                    {startingCheckout ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        Redirecting to checkout...
+                      </span>
+                    ) : (
+                      'Get Credits to Generate'
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !canGenerate}
+                    className="w-full max-w-md py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
+                  >
+                    {isGenerating ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        {generationStatus === 'pending' ? 'Waiting for AI...' : 'Crafting Your Track...'}
+                      </span>
                     ) : (
                       'Make It Sing ✨'
                     )}
-                </button>
+                  </button>
+                )}
 
                 {credits + lifetimeCredits >= songCost && (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">

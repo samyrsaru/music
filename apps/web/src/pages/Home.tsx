@@ -114,7 +114,7 @@ function Home() {
               </div>
 
               <p className="mt-6 text-sm text-zinc-500 dark:text-zinc-500">
-                No credit card required • Free to try • Cancel anytime
+                Your first song is on us — no credit card required
               </p>
             </div>
 
@@ -202,7 +202,7 @@ function Home() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="p-8 md:p-12 rounded-3xl bg-gradient-to-br from-green-500 to-emerald-600 text-white">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">
-                Ready to Create Your First Song?
+                Generate Your First Songs for Free
               </h2>
               <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
                 Join thousands of creators who are already making music with AI. Start for free today.

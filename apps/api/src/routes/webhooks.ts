@@ -1,12 +1,16 @@
 import { Hono } from 'hono'
 import { validateEvent, WebhookVerificationError } from '@polar-sh/sdk/webhooks.js'
+import { createClerkClient } from '@clerk/backend'
 import db from '../lib/db.js'
 import { uploadAudioToR2, downloadAudioFromUrl } from '../lib/r2.js'
 import { isWebhookProcessed, markWebhookProcessed } from '../lib/sync.js'
 
 const app = new Hono()
 
+const clerkClient = createClerkClient({ secretKey: process.env.CLERK_SECRET_KEY })
+
 console.log('Webhook secret exists:', !!process.env.POLAR_WEBHOOK_SECRET)
+console.log('CLERK_WEBHOOK_SECRET exists:', !!process.env.CLERK_WEBHOOK_SECRET)
 
 // Replicate webhook - called when music generation completes
 app.post('/replicate', async (c) => {
@@ -294,3 +298,62 @@ app.post('/polar', async (c) => {
 })
 
 export default app
+
+// Clerk webhook handler
+app.post('/clerk', async (c) => {
+  const body = await c.req.text()
+  const webhookSecret = process.env.CLERK_WEBHOOK_SECRET
+  
+  if (!webhookSecret) {
+    console.error('CLERK_WEBHOOK_SECRET not configured')
+    return c.json({ error: 'Webhook secret not configured' }, 500)
+  }
+
+  try {
+    // Verify Clerk webhook signature
+    const svix_id = c.req.header('svix-id')
+    const svix_timestamp = c.req.header('svix-timestamp')
+    const svix_signature = c.req.header('svix-signature')
+
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      return c.json({ error: 'Missing Svix headers' }, 400)
+    }
+
+    const webhookData = JSON.parse(body)
+    const eventType = webhookData.type
+    const eventData = webhookData.data
+
+    console.log(`📥 Clerk webhook received: ${eventType}`)
+
+    if (eventType === 'user.created') {
+      const clerkUserId = eventData.id
+      const email = eventData.email_addresses?.[0]?.email_address
+
+      if (!clerkUserId) {
+        console.error('  ❌ Missing user ID in webhook')
+        return c.json({ error: 'Missing user ID' }, 400)
+      }
+
+      // Check if user already exists
+      const existingUser = db.prepare('SELECT clerkUserId FROM users WHERE clerkUserId = ?').get(clerkUserId)
+      
+      if (existingUser) {
+        console.log(`  ℹ️  User ${clerkUserId} already exists, skipping`)
+        return c.json({ received: true })
+      }
+
+      // Create new user with 50 free credits
+      db.prepare(`
+        INSERT INTO users (clerkUserId, email, credits, lifetime_credits)
+        VALUES (?, ?, 50, 0)
+      `).run(clerkUserId, email || null)
+
+      console.log(`  ✅ Created new user ${clerkUserId} with 50 free credits`)
+    }
+
+    return c.json({ received: true })
+  } catch (err: any) {
+    console.error('Clerk webhook error:', err)
+    return c.json({ error: err.message }, 500)
+  }
+})

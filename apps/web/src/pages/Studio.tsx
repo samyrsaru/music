@@ -29,6 +29,7 @@ function Studio() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [credits, setCredits] = useState(0)
+  const [lifetimeCredits, setLifetimeCredits] = useState(0)
   const [modelConfig, setModelConfig] = useState<ModelConfig | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
@@ -61,6 +62,7 @@ function Studio() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
       setCredits(data.credits)
+      setLifetimeCredits(data.lifetimeCredits || 0)
     } catch (err) {
       console.error('Failed to fetch status:', err)
     }
@@ -214,7 +216,7 @@ function Studio() {
         setGenerationStatus('idle')
       } else {
         setGenerationId(data.generationId)
-        setCredits(data.creditsRemaining)
+        fetchStatus()
         // Navigate to song page to view status
         navigate(`/song/${data.generationId}`)
         // Start polling for status
@@ -469,7 +471,7 @@ function Studio() {
               <div className="flex flex-col items-center gap-4">
                 <button
                   onClick={handleGenerate}
-                  disabled={isGenerating || credits < songCost || !canGenerate}
+                  disabled={isGenerating || (credits + lifetimeCredits) < songCost || !canGenerate}
                   className="w-full max-w-md py-4 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-lg rounded-xl shadow-lg hover:shadow-xl transition-all disabled:shadow-none"
                 >
                   {isGenerating ? (
@@ -477,21 +479,22 @@ function Studio() {
                       <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                       {generationStatus === 'pending' ? 'Waiting for AI...' : 'Crafting Your Track...'}
                     </span>
-                  ) : credits < songCost ? (
+                  ) : credits + lifetimeCredits < songCost ? (
                       'No Credits - Subscribe to Generate'
                     ) : (
                       'Make It Sing ✨'
                     )}
                 </button>
 
-                {credits >= songCost && (
+                {credits + lifetimeCredits >= songCost && (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     Each song costs {songCost} credits
                   </p>
                 )}
 
                 <p className="text-xs text-zinc-400 dark:text-zinc-600">
-                  {credits} credits remaining
+                  {credits + lifetimeCredits} credits remaining
+                  {lifetimeCredits > 0 && ` (${lifetimeCredits} lifetime)`}
                 </p>
               </div>
 

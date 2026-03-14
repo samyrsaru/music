@@ -26,25 +26,8 @@ function Account() {
   useEffect(() => {
     if (isLoaded && userId) {
       fetchStatus()
-      // Save email to DB so auto-sync can match Polar subscriptions by email
-      saveEmail()
     }
   }, [isLoaded, userId])
-
-  const saveEmail = async () => {
-    const email = user?.primaryEmailAddress?.emailAddress
-    if (!email) return
-
-    try {
-      await fetchWithAuth(`${API_URL}/api/subscription/update-email`, {
-        method: 'POST',
-        headers: { 'x-user-email': email }
-      })
-    } catch (err) {
-      // Silent fail - not critical
-      console.log('Failed to save email:', err)
-    }
-  }
 
   const fetchStatus = async () => {
     setLoading(true)
@@ -62,10 +45,8 @@ function Account() {
   const manageSubscription = async () => {
     setManagingSubscription(true)
     try {
-      const email = user?.primaryEmailAddress?.emailAddress
       const res = await fetchWithAuth(`${API_URL}/api/subscription/portal`, {
-        method: 'POST',
-        headers: email ? { 'x-user-email': email } : {}
+        method: 'POST'
       })
       const { portalUrl, error } = await res.json()
       if (error) {
@@ -83,10 +64,8 @@ function Account() {
   const startCheckout = async () => {
     setStartingCheckout(true)
     try {
-      const email = user?.primaryEmailAddress?.emailAddress
       const res = await fetchWithAuth(`${API_URL}/api/subscription/checkout`, {
-        method: 'POST',
-        headers: email ? { 'x-user-email': email } : {}
+        method: 'POST'
       })
       const { checkoutUrl, error } = await res.json()
       if (error) {

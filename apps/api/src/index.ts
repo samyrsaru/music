@@ -20,7 +20,7 @@ startPolling()
 app.use('*', cors({
   origin: process.env.WEB_URL || 'http://localhost:5173',
   credentials: true,
-  allowHeaders: ['Content-Type', 'Authorization', 'x-user-email'],
+  allowHeaders: ['Content-Type', 'Authorization'],
 }))
 
 app.use('*', clerkMiddleware({

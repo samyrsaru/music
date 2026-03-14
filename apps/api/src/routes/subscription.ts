@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { getAuth } from '@hono/clerk-auth'
 import { Polar } from '@polar-sh/sdk'
 import db from '../lib/db.js'
+import { getUserEmail } from '../lib/clerk.js'
 
 const polar = new Polar({
   accessToken: process.env.POLAR_ACCESS_TOKEN!,
@@ -22,8 +23,8 @@ app.post('/checkout', async (c) => {
   }
 
   try {
-    // Get user's email to pre-fill checkout
-    const email = c.req.header('x-user-email')
+    // Get user's email from Clerk to pre-fill checkout
+    const email = await getUserEmail(auth.userId)
 
     const checkoutParams: any = {
       products: [POLAR_PRODUCT_ID],
@@ -32,7 +33,7 @@ app.post('/checkout', async (c) => {
       metadata: { clerkUserId: auth.userId },
     }
 
-    // Pre-fill email if provided
+    // Pre-fill email if available
     if (email) {
       checkoutParams.customerEmail = email
     }
@@ -67,46 +68,6 @@ app.get('/status', (c) => {
   })
 })
 
-// Update user email (called on initial load)
-app.post('/update-email', (c) => {
-  const auth = getAuth(c)
-  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
-
-  const email = c.req.header('x-user-email')
-  if (!email) {
-    return c.json({ error: 'Email required' }, 400)
-  }
-
-  try {
-    // Check if user already exists
-    const existingUser = db.prepare('SELECT clerkUserId FROM users WHERE clerkUserId = ?').get(auth.userId)
-    
-    if (!existingUser) {
-      // New user - check if we're still giving welcome credits (first 10k users)
-      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }
-      const welcomeCredits = userCount.count < 10000 ? 50 : 0
-      
-      console.log(`🎁 New user signup: ${auth.userId.substring(0, 8)}... (user #${userCount.count + 1}) - Welcome credits: ${welcomeCredits}`)
-      
-      // Insert new user with welcome credits
-      db.prepare(`
-        INSERT INTO users (clerkUserId, email, credits, lifetime_credits)
-        VALUES (?, ?, 0, ?)
-      `).run(auth.userId, email, welcomeCredits)
-    } else {
-      // Existing user - just update email
-      db.prepare(`
-        UPDATE users SET email = ? WHERE clerkUserId = ?
-      `).run(email, auth.userId)
-    }
-
-    return c.json({ success: true })
-  } catch (error: any) {
-    console.error('Update email error:', error)
-    return c.json({ error: 'Failed to update email' }, 500)
-  }
-})
-
 // Get my user ID (for debugging)
 app.get('/me', (c) => {
   const auth = getAuth(c)
@@ -124,11 +85,11 @@ app.post('/sync', async (c) => {
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   try {
-    // Get user's email from request header (set by frontend)
-    const email = c.req.header('x-user-email')
+    // Get user's email from Clerk
+    const email = await getUserEmail(auth.userId)
     
     if (!email) {
-      return c.json({ error: 'Email required' }, 400)
+      return c.json({ error: 'Email not found in Clerk' }, 400)
     }
 
     // Get customer by email
@@ -201,11 +162,11 @@ app.post('/portal', async (c) => {
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   try {
-    // Get user's email from request header
-    const email = c.req.header('x-user-email')
+    // Get user's email from Clerk
+    const email = await getUserEmail(auth.userId)
     
     if (!email) {
-      return c.json({ error: 'Email required' }, 400)
+      return c.json({ error: 'Email not found in Clerk' }, 400)
     }
 
     // Get customer by email

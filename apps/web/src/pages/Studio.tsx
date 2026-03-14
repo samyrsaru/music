@@ -130,16 +130,6 @@ function Studio() {
     setName('')
   }
 
-  const downloadAudio = (url: string, filename: string) => {
-    const safeName = filename.replace(/[^a-zA-Z0-9\-_\s]/g, '').trim() || 'makemusic'
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${safeName}.mp3`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
   const pollGenerationStatus = async (id: string) => {
     const poll = async () => {
       try {
@@ -537,10 +527,10 @@ function Studio() {
                       }}
                     />
                     <button 
-                      onClick={() => downloadAudio(audioUrl, `${name || 'makemusic-generation'}.mp3`)}
-                      className="w-full py-3 bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold rounded-xl hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all"
+                      onClick={() => navigate(`/song/${generationId}`)}
+                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
                     >
-                      Download
+                      View Full Page
                     </button>
                   </div>
                 </div>

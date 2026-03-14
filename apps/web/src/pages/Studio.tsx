@@ -598,12 +598,21 @@ function Studio() {
                         if (el) registerAudioElement(el)
                       }}
                     />
-                    <button 
-                      onClick={() => navigate(`/song/${generationId}`)}
-                      className="w-full py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
-                    >
-                      View Full Page
-                    </button>
+                    <div className="flex gap-3">
+                      <a
+                        href={audioUrl}
+                        download
+                        className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold rounded-xl transition-all text-center"
+                      >
+                        Download ↓
+                      </a>
+                      <button 
+                        onClick={() => navigate(`/song/${generationId}`)}
+                        className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
+                      >
+                        View Full Page
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}

@@ -600,9 +600,34 @@ function Studio() {
                     />
                     <div className="flex gap-3">
                       <button
-                        onClick={() => {
-                          // Open in new tab - works best on mobile
-                          window.open(audioUrl, '_blank')
+                        onClick={async () => {
+                          try {
+                            // Fetch the file as blob (works for cross-origin if CORS enabled)
+                            const response = await fetch(audioUrl, { mode: 'cors' })
+                            if (!response.ok) throw new Error('Fetch failed')
+                            
+                            const blob = await response.blob()
+                            const blobUrl = window.URL.createObjectURL(blob)
+                            
+                            // Create anchor and trigger download
+                            const link = document.createElement('a')
+                            link.href = blobUrl
+                            link.download = `song-${generationId}.mp3`
+                            link.style.display = 'none'
+                            document.body.appendChild(link)
+                            
+                            // Use setTimeout to ensure the element is in DOM
+                            setTimeout(() => {
+                              link.click()
+                              setTimeout(() => {
+                                document.body.removeChild(link)
+                                window.URL.revokeObjectURL(blobUrl)
+                              }, 100)
+                            }, 0)
+                          } catch (err) {
+                            // Fallback: open in new tab for user to manually save
+                            window.open(audioUrl, '_blank')
+                          }
                         }}
                         className="flex-1 py-3 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 font-semibold rounded-xl transition-all"
                       >

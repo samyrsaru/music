@@ -213,6 +213,46 @@ function Account() {
                         {managingSubscription ? 'Opening...' : 'Manage Subscription'}
                       </button>
                     </div>
+                  ) : status?.currentPeriodEnd ? (
+                    // Canceled subscription with remaining credits
+                    <div className="space-y-6">
+                      <div className="p-4 border-2 border-yellow-500 dark:border-yellow-600 rounded-xl bg-yellow-50/50 dark:bg-yellow-950/10 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-bl-lg">
+                          CANCELED
+                        </div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                          <span className="font-semibold text-zinc-900 dark:text-zinc-100">Treble</span>
+                        </div>
+                        <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">$0</p>
+                        <p className="text-sm text-zinc-500 mb-4">until {formatDate(status.currentPeriodEnd)}</p>
+                        <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                          <li className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {status.credits} credits remaining
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <svg className="w-4 h-4 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Expires {formatDate(status.currentPeriodEnd)}
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <p className="text-zinc-600 dark:text-zinc-400">
+                        Your subscription was canceled. You can still use your {status.credits} credits until {formatDate(status.currentPeriodEnd)}.
+                      </p>
+                      <button
+                        onClick={startCheckout}
+                        disabled={startingCheckout}
+                        className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-green-500/25 hover:shadow-green-500/40"
+                      >
+                        {startingCheckout ? 'Redirecting...' : 'Reactivate Treble — $5/month'}
+                      </button>
+                    </div>
                   ) : (
                     <div className="space-y-6">
                       {/* Plan Comparison */}

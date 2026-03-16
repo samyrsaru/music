@@ -11,6 +11,7 @@ interface Generation {
   name?: string
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
+  favorite: number
   createdAt: string
   originalIdea?: string
 }
@@ -31,6 +32,7 @@ function Song() {
   const [editedName, setEditedName] = useState('')
   const [isSavingName, setIsSavingName] = useState(false)
   const [nameError, setNameError] = useState('')
+  const [togglingFavorite, setTogglingFavorite] = useState(false)
 
   const NAME_MIN_LENGTH = 1
   const NAME_MAX_LENGTH = 60
@@ -128,6 +130,29 @@ function Song() {
   const cancelEditingName = () => {
     setIsEditingName(false)
     setEditedName('')
+  }
+
+  const toggleFavorite = async () => {
+    if (!id || !generation) return
+    
+    setTogglingFavorite(true)
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/${id}/favorite`, {
+        method: 'PATCH',
+      })
+      
+      const data = await res.json()
+      
+      if (data.error) {
+        setError(data.error)
+      } else {
+        setGeneration({ ...generation, favorite: data.favorite ? 1 : 0 })
+      }
+    } catch (err) {
+      setError('Failed to update favorite')
+    } finally {
+      setTogglingFavorite(false)
+    }
   }
 
   const deleteGeneration = async () => {
@@ -254,16 +279,37 @@ function Song() {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-2 group">
+                  <div className="flex items-center gap-3 group">
                     <h1 className="text-3xl md:text-4xl font-bold mb-2">{generation.name || generation.prompt}</h1>
-                    <button
-                      onClick={startEditingName}
-                      className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-green-500 transition-opacity mb-2"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </button>
+                    <div className="flex items-center gap-1 mb-2">
+                      <button
+                        onClick={toggleFavorite}
+                        disabled={togglingFavorite}
+                        className={`p-2 rounded-lg transition-all ${
+                          generation.favorite
+                            ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
+                            : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                        }`}
+                        title={generation.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                      >
+                        {togglingFavorite ? (
+                          <div className="animate-spin rounded-full h-5 w-5 border-2 border-red-500 border-t-transparent" />
+                        ) : (
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill={generation.favorite ? 'currentColor' : 'none'} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                          </svg>
+                        )}
+                      </button>
+                      <button
+                        onClick={startEditingName}
+                        className="opacity-0 group-hover:opacity-100 p-2 text-zinc-500 hover:text-green-500 hover:bg-green-50 dark:hover:bg-green-950/30 rounded-lg transition-all"
+                        title="Edit name"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 )}
                 <p className="text-zinc-500 dark:text-zinc-500">

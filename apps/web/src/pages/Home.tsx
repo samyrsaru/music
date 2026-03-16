@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
-import { SignIn, useAuth } from '@clerk/react'
+import { SignIn, SignInButton, useAuth } from '@clerk/react'
 import { Link, useNavigate } from 'react-router'
 import { ThemeToggle } from '../components/ThemeToggle.tsx'
 
@@ -408,7 +408,7 @@ function Home() {
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    50 credits on signup
+                    50 credits (5 songs) on signup
                   </li>
                   <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -423,9 +423,11 @@ function Home() {
                     No credit card required
                   </li>
                 </ul>
-                <button className="w-full py-3 px-4 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-900 dark:text-zinc-100 font-semibold rounded-xl transition-all">
-                  Get Started
-                </button>
+                <SignInButton mode="modal">
+                  <button className="w-full py-3 px-4 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-900 dark:text-zinc-100 font-semibold rounded-xl transition-all">
+                    Get Started
+                  </button>
+                </SignInButton>
               </div>
 
               {/* Treble Plan */}
@@ -445,13 +447,13 @@ function Home() {
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    600 credits/month
+                    600 credits (60 songs)/month
                   </li>
                   <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Rollover credits (max 1200)
+                    Rollover credits (max 1200 / 120 songs)
                   </li>
                   <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -460,14 +462,16 @@ function Home() {
                     Cancel anytime
                   </li>
                 </ul>
-                <button className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40">
-                  Upgrade to Treble
-                </button>
+                <SignInButton mode="modal">
+                  <button className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40">
+                    Upgrade to Treble
+                  </button>
+                </SignInButton>
               </div>
             </div>
 
             <p className="text-center text-sm text-zinc-500 dark:text-zinc-500 mt-8">
-              1 credit = 1 song generation. Credits roll over up to 1200 total. Secure checkout powered by Polar.
+              10 credits = 1 song generation. Credits roll over up to 1200 total. Secure checkout powered by Polar.
             </p>
           </div>
         </section>

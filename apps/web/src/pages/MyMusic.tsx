@@ -48,6 +48,13 @@ function MyMusic() {
     if (isLoaded && userId) fetchGenerations()
   }, [isLoaded, userId])
 
+  // Auto-untoggle favorites filter when no favorites remain
+  useEffect(() => {
+    if (showFavoritesOnly && !generations.some(g => g.favorite === 1)) {
+      setShowFavoritesOnly(false)
+    }
+  }, [generations, showFavoritesOnly])
+
   const fetchGenerations = async () => {
     try {
       const res = await fetchWithAuth(`${API_URL}/api/generations`)

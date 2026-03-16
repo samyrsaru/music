@@ -36,7 +36,7 @@ app.post('/generate', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { lyrics, prompt } = await c.req.json()
+  const { lyrics, prompt, originalIdea } = await c.req.json()
   
   // Server-side validation using model constraints
   const lyricsLength = lyrics?.length || 0
@@ -157,9 +157,9 @@ STRICT: Return ONLY the title text. NO quotes. NO explanations. Just the title. 
   try {
     // Create pending generation record
     db.prepare(`
-      INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, status, createdAt)
-      VALUES (?, ?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName)
+      INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, originalIdea, status, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName, originalIdea || null)
 
     // Start async generation with webhook
     const input = {

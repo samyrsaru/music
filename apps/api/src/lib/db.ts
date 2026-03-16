@@ -92,6 +92,14 @@ try {
   // Ignore errors
 }
 
+// Add originalIdea column to store the user's initial song concept
+try {
+  db.exec(`ALTER TABLE generations ADD COLUMN originalIdea TEXT`)
+  console.log('✅ Migration: Added originalIdea column to generations table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
 // Create index on email for faster lookups
 try {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)

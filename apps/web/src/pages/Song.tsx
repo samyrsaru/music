@@ -12,6 +12,7 @@ interface Generation {
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
   createdAt: string
+  originalIdea?: string
 }
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -356,6 +357,16 @@ function Song() {
                   {generation.lyrics}
                 </div>
               </div>
+
+              {/* Original Idea */}
+              {generation.originalIdea && (
+                <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-6">
+                  <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-2">
+                    Original Idea
+                  </h3>
+                  <p className="text-lg text-zinc-600 dark:text-zinc-400">{generation.originalIdea}</p>
+                </div>
+              )}
 
               {/* Style Info */}
               <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-6">

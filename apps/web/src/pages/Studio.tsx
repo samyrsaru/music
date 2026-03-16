@@ -227,10 +227,10 @@ function Studio() {
   }
 
   const handleAutoGenerate = async (autoLyrics: string, autoPrompt: string) => {
-    await generateSong(autoLyrics, autoPrompt)
+    await generateSong(autoLyrics, autoPrompt, songIdea)
   }
 
-  const generateSong = async (songLyrics: string, songPrompt: string) => {
+  const generateSong = async (songLyrics: string, songPrompt: string, originalConcept?: string) => {
     setIsGenerating(true)
     setError('')
     setAudioUrl(null)
@@ -242,7 +242,8 @@ function Studio() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lyrics: songLyrics,
-          prompt: songPrompt
+          prompt: songPrompt,
+          originalIdea: originalConcept || songIdea
         })
       })
 

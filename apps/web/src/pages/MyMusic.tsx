@@ -36,13 +36,6 @@ function MyMusic() {
       const matchesFavorite = showFavoritesOnly ? gen.favorite === 1 : true
       return matchesSearch && matchesFavorite
     })
-    .sort((a, b) => {
-      // Sort favorites first, then by date
-      if (a.favorite !== b.favorite) {
-        return b.favorite - a.favorite
-      }
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    })
 
   useEffect(() => {
     if (isLoaded && userId) fetchGenerations()

@@ -409,6 +409,10 @@ function Home() {
               Privacy Policy
             </Link>
             <span className="hidden md:inline">·</span>
+            <Link to="/terms" className="hover:text-green-500 dark:hover:text-green-400 transition-colors">
+              Terms of Service
+            </Link>
+            <span className="hidden md:inline">·</span>
             <div>Music generated using AI technology</div>
             <span className="hidden md:inline">·</span>
             <div>A <a href="https://lerimas.com" target="_blank" rel="noopener noreferrer" className="hover:text-green-500 transition-colors">lerimas.com</a> app</div>

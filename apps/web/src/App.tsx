@@ -6,6 +6,7 @@ import MyMusic from './pages/MyMusic'
 import Song from './pages/Song'
 import Account from './pages/Account'
 import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 import NotFound from './pages/NotFound'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/song/:id" element={<Song />} />
           <Route path="/account" element={<Account />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>

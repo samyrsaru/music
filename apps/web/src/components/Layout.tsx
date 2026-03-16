@@ -107,9 +107,12 @@ export function Layout({ children }: { children?: ReactNode }) {
       <Header />
       {children ?? <Outlet />}
       <footer className="border-t border-zinc-200 dark:border-zinc-800 px-6 py-4 text-center text-sm text-zinc-500 dark:text-zinc-500 space-y-1">
-        <div>
+        <div className="space-x-4">
           <Link to="/privacy" className="hover:text-green-500 dark:hover:text-green-400 transition-colors">
             Privacy Policy
+          </Link>
+          <Link to="/terms" className="hover:text-green-500 dark:hover:text-green-400 transition-colors">
+            Terms of Service
           </Link>
         </div>
         <div className="text-xs opacity-75">

@@ -11,6 +11,7 @@ interface Generation {
   name?: string
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
+  favorite: number
   createdAt: string
 }
 
@@ -25,11 +26,23 @@ function MyMusic() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null)
 
-  const filteredGenerations = generations.filter(gen => 
-    gen.prompt.toLowerCase().includes(search.toLowerCase()) ||
-    gen.lyrics.toLowerCase().includes(search.toLowerCase())
-  )
+  const filteredGenerations = generations
+    .filter(gen => {
+      const matchesSearch = gen.prompt.toLowerCase().includes(search.toLowerCase()) ||
+        gen.lyrics.toLowerCase().includes(search.toLowerCase())
+      const matchesFavorite = showFavoritesOnly ? gen.favorite === 1 : true
+      return matchesSearch && matchesFavorite
+    })
+    .sort((a, b) => {
+      // Sort favorites first, then by date
+      if (a.favorite !== b.favorite) {
+        return b.favorite - a.favorite
+      }
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
 
   useEffect(() => {
     if (isLoaded && userId) fetchGenerations()
@@ -75,6 +88,30 @@ function MyMusic() {
     }
   }
 
+  const toggleFavorite = async (id: string) => {
+    setTogglingFavorite(id)
+    try {
+      const res = await fetchWithAuth(`${API_URL}/api/generations/${id}/favorite`, {
+        method: 'PATCH',
+      })
+      
+      const data = await res.json()
+      
+      if (data.error) {
+        setError(data.error)
+      } else {
+        // Update local state
+        setGenerations(generations.map(g => 
+          g.id === id ? { ...g, favorite: data.favorite ? 1 : 0 } : g
+        ))
+      }
+    } catch (err) {
+      setError('Failed to update favorite')
+    } finally {
+      setTogglingFavorite(null)
+    }
+  }
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr + 'Z').toLocaleString(undefined, {
       month: 'short',
@@ -115,9 +152,9 @@ function MyMusic() {
               </Link>
             </div>
 
-            {/* Search */}
+            {/* Search and Filters */}
             {generations.length > 0 && (
-              <div className="mb-6">
+              <div className="mb-6 space-y-4">
                 <input
                   type="text"
                   placeholder="Search your songs..."
@@ -125,6 +162,29 @@ function MyMusic() {
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
                 />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                      showFavoritesOnly
+                        ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700'
+                        : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    }`}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill={showFavoritesOnly ? 'currentColor' : 'none'} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    {showFavoritesOnly ? 'Showing Favorites' : 'Show Favorites'}
+                  </button>
+                  {showFavoritesOnly && (
+                    <button
+                      onClick={() => setShowFavoritesOnly(false)}
+                      className="text-sm text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    >
+                      Clear filter
+                    </button>
+                  )}
+                </div>
               </div>
             )}
 
@@ -171,7 +231,7 @@ function MyMusic() {
                     className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:border-green-300 dark:hover:border-green-700 transition-all shadow-sm hover:shadow-md"
                   >
                     <Link to={`/song/${gen.id}`} className="block p-6 space-y-4">
-                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-1">
                             {formatDate(gen.createdAt)}
@@ -180,19 +240,43 @@ function MyMusic() {
                             {gen.name || gen.prompt}
                           </h3>
                         </div>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault()
-                            e.stopPropagation()
-                            setDeleteConfirm(gen.id)
-                          }}
-                          className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
-                          title="Delete track"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              toggleFavorite(gen.id)
+                            }}
+                            disabled={togglingFavorite === gen.id}
+                            className={`p-2 rounded-lg transition-all ${
+                              gen.favorite
+                                ? 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/30'
+                                : 'text-zinc-400 hover:text-yellow-500 hover:bg-yellow-50 dark:hover:bg-yellow-950/30'
+                            }`}
+                            title={gen.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                          >
+                            {togglingFavorite === gen.id ? (
+                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-yellow-500 border-t-transparent" />
+                            ) : (
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill={gen.favorite ? 'currentColor' : 'none'} stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setDeleteConfirm(gen.id)
+                            }}
+                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                            title="Delete track"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
 
                       {gen.status === 'pending' ? (

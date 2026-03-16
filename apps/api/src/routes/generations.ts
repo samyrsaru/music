@@ -562,7 +562,7 @@ app.get('/', async (c) => {
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   const generations = db.prepare(`
-    SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, createdAt 
+    SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, favorite, createdAt 
     FROM generations 
     WHERE clerkUserId = ? 
     ORDER BY createdAt DESC
@@ -693,6 +693,33 @@ app.patch('/:id/name', async (c) => {
   console.log(`✏️ Updated name for generation ${id}: "${trimmedName}"`)
 
   return c.json({ success: true, name: trimmedName })
+})
+
+// Toggle favorite status
+app.patch('/:id/favorite', async (c) => {
+  const auth = getAuth(c)
+  if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
+
+  const id = c.req.param('id')
+  
+  // Get current favorite status
+  const generation = db.prepare(`
+    SELECT favorite FROM generations WHERE id = ? AND clerkUserId = ?
+  `).get(id, auth.userId) as any
+
+  if (!generation) {
+    return c.json({ error: 'Generation not found' }, 404)
+  }
+
+  const newStatus = generation.favorite ? 0 : 1
+  
+  const result = db.prepare(`
+    UPDATE generations SET favorite = ? WHERE id = ? AND clerkUserId = ?
+  `).run(newStatus, id, auth.userId)
+
+  console.log(`${newStatus ? '⭐' : '☆'} ${newStatus ? 'Added' : 'Removed'} favorite for generation ${id}`)
+
+  return c.json({ success: true, favorite: newStatus === 1 })
 })
 
 export default app

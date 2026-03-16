@@ -100,6 +100,14 @@ try {
   // Column already exists, ignore error
 }
 
+// Add favorite column to track user's favorite songs
+try {
+  db.exec(`ALTER TABLE generations ADD COLUMN favorite INTEGER DEFAULT 0`)
+  console.log('✅ Migration: Added favorite column to generations table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
 // Create index on email for faster lookups
 try {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)

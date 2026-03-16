@@ -23,7 +23,7 @@ function TermsOfService() {
               We provide an AI-powered music generation platform that allows users to create songs from text prompts. Our service includes:
             </p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Music generation using third-party AI models</li>
+              <li>Music generation using Minimax AI models</li>
               <li>Library management for saving and organizing your creations</li>
               <li>Subscription-based access with usage limits</li>
             </ul>
@@ -99,7 +99,7 @@ function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold mb-3">8. Third-Party Services</h2>
             <p>
-              Our service relies on third-party AI providers. These services are subject to their own terms and conditions. We are not responsible for the availability or performance of these third-party services.
+              Our service relies on Minimax for AI music generation. These services are subject to their own terms and conditions. We are not responsible for the availability or performance of Minimax.
             </p>
           </section>
 

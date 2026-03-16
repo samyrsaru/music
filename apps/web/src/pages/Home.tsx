@@ -508,14 +508,14 @@ function Home() {
               <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <h3 className="font-semibold text-lg mb-2">Can I use the generated music commercially?</h3>
                 <p className="text-zinc-600 dark:text-zinc-400">
-                  Our AI music generation is powered by third-party providers. Commercial usage rights depend on their current terms, which may change. Please review the current terms of our AI provider before using music commercially. We recommend checking the Terms of Service for the latest information.
+                  Our AI music generation is powered by Minimax. Commercial usage rights depend on their current terms, which may change. Please review Minimax's terms of service before using music commercially.
                 </p>
               </div>
 
               <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
                 <h3 className="font-semibold text-lg mb-2">Who owns the songs I generate?</h3>
                 <p className="text-zinc-600 dark:text-zinc-400">
-                  You retain ownership of your input prompts and ideas. However, the AI-generated output is subject to the terms of our third-party AI providers. Ownership rights may vary based on their policies, which are subject to change. See our Terms of Service for details.
+                  You retain ownership of your input prompts and ideas. However, the AI-generated output is subject to Minimax's terms. Ownership rights may vary based on their policies, which are subject to change. See our Terms of Service for details.
                 </p>
               </div>
             </div>

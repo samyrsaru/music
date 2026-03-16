@@ -381,6 +381,97 @@ function Home() {
           </div>
         </section>
 
+        {/* Pricing Section */}
+        <section className="px-6 py-20 bg-zinc-100/50 dark:bg-zinc-900/50">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Simple, Transparent Pricing
+              </h2>
+              <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
+                Start free, upgrade when you're ready. No hidden fees, cancel anytime.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
+              {/* Free Plan */}
+              <div className="p-8 rounded-2xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-green-500/50 dark:hover:border-green-500/50 transition-all">
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-2">Free</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">$0</span>
+                    <span className="text-zinc-500">forever</span>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    50 credits on signup
+                  </li>
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Access to all features
+                  </li>
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    No credit card required
+                  </li>
+                </ul>
+                <button className="w-full py-3 px-4 bg-zinc-100 dark:bg-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-900 dark:text-zinc-100 font-semibold rounded-xl transition-all">
+                  Get Started
+                </button>
+              </div>
+
+              {/* Treble Plan */}
+              <div className="p-8 rounded-2xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-2 border-green-500 dark:border-green-600 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-green-500 text-white text-xs font-bold px-4 py-1 rounded-bl-lg">
+                  POPULAR
+                </div>
+                <div className="mb-6">
+                  <h3 className="text-xl font-semibold mb-2">Treble</h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold">$5</span>
+                    <span className="text-zinc-500">/month</span>
+                  </div>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    600 credits/month
+                  </li>
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Rollover credits (max 1200)
+                  </li>
+                  <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Cancel anytime
+                  </li>
+                </ul>
+                <button className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40">
+                  Upgrade to Treble
+                </button>
+              </div>
+            </div>
+
+            <p className="text-center text-sm text-zinc-500 dark:text-zinc-500 mt-8">
+              1 credit = 1 song generation. Credits roll over up to 1200 total. Secure checkout powered by Polar.
+            </p>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="px-6 py-20">
           <div className="max-w-4xl mx-auto text-center">

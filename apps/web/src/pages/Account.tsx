@@ -174,8 +174,8 @@ function Account() {
                           <span className={`w-2 h-2 rounded-full ${status.cancelAtPeriodEnd ? 'bg-yellow-500' : 'bg-green-500'} animate-pulse`}></span>
                           <span className="font-semibold text-zinc-900 dark:text-zinc-100">Treble</span>
                         </div>
-                        <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">$5</p>
-                        <p className="text-sm text-zinc-500 mb-4">per month</p>
+<p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">$5</p>
+                         <p className="text-sm text-zinc-500 mb-4">per month + VAT</p>
                         <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
                           <li className="flex items-center gap-2">
                             <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -250,7 +250,7 @@ function Account() {
                         disabled={startingCheckout}
                         className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-green-500/25 hover:shadow-green-500/40"
                       >
-                        {startingCheckout ? 'Redirecting...' : 'Reactivate Treble — $5/month'}
+                        {startingCheckout ? 'Redirecting...' : 'Reactivate Treble — $5/month + VAT'}
                       </button>
                     </div>
                   ) : (
@@ -287,38 +287,38 @@ function Account() {
                             <span className="w-2 h-2 bg-green-500 rounded-full"></span>
                             <span className="font-semibold text-zinc-900 dark:text-zinc-100">Treble</span>
                           </div>
-                          <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">$5</p>
-                          <p className="text-sm text-zinc-500 mb-4">per month</p>
-                          <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              600 credits/month
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Rollover credits (max 600)
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Cancel anytime
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-
-                      {/* CTA Button */}
-                      <button
-                        onClick={startCheckout}
-                        disabled={startingCheckout}
-                        className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-green-500/25 hover:shadow-green-500/40"
-                      >
-                        {startingCheckout ? 'Redirecting...' : 'Upgrade to Treble — $5/month'}
+<p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 mb-1">$5</p>
+                         <p className="text-sm text-zinc-500 mb-4">per month + VAT</p>
+                         <ul className="space-y-2 text-sm text-zinc-700 dark:text-zinc-300">
+                             <li className="flex items-center gap-2">
+                               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                               </svg>
+                               600 credits/month
+                             </li>
+                             <li className="flex items-center gap-2">
+                               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                               </svg>
+                               Rollover credits (max 600)
+                             </li>
+                             <li className="flex items-center gap-2">
+                               <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                               </svg>
+                               Cancel anytime
+                             </li>
+                           </ul>
+                         </div>
+                       </div>
+ 
+                       {/* CTA Button */}
+                       <button
+                         onClick={startCheckout}
+                         disabled={startingCheckout}
+                         className="w-full py-3 px-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl transition-all disabled:opacity-50 shadow-lg shadow-green-500/25 hover:shadow-green-500/40"
+                       >
+                         {startingCheckout ? 'Redirecting...' : 'Upgrade to Treble — $5/month + VAT'}
                       </button>
                       <p className="text-center text-xs text-zinc-500">
                         Secure checkout powered by Polar

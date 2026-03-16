@@ -434,7 +434,7 @@ function Home() {
                   <h3 className="text-xl font-semibold mb-2">Treble</h3>
                   <div className="flex items-baseline gap-1">
                     <span className="text-4xl font-bold">$5</span>
-                    <span className="text-zinc-500">/month</span>
+                    <span className="text-zinc-500">/month + VAT</span>
                   </div>
                 </div>
                 <ul className="space-y-3">

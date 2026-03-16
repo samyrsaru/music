@@ -448,7 +448,7 @@ function Home() {
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Rollover credits (max 1200)
+                    Rollover up to 600 credits
                   </li>
                   <li className="flex items-center gap-3 text-zinc-600 dark:text-zinc-400">
                     <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -469,7 +469,7 @@ function Home() {
             </div>
 
             <p className="text-center text-sm text-zinc-500 dark:text-zinc-500 mt-6">
-              10 credits = 1 song generation. Credits roll over up to 1200 total. Secure checkout powered by Polar.
+              10 credits = 1 song generation. Secure checkout powered by Polar.
             </p>
           </div>
         </section>

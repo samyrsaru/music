@@ -474,6 +474,54 @@ function Home() {
           </div>
         </section>
 
+        {/* FAQ Section */}
+        <section className="px-6 py-20">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4">
+                Frequently Asked Questions
+              </h2>
+            </div>
+
+            <div className="space-y-6">
+              <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg mb-2">How does the credit system work?</h3>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  Each song generation costs 10 credits. You receive 50 credits when you sign up for free. With Treble ($5/month + VAT), you get 600 credits each month.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg mb-2">Do credits expire?</h3>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  Free signup credits never expire. Treble subscription credits last for the billing month, but unused credits rollover up to 600. If you cancel, any remaining credits last until your subscription period ends.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg mb-2">What happens if I cancel my subscription?</h3>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  You keep all remaining credits until the end of your current billing period. Your subscription won't renew, and you'll revert to the free plan afterward.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg mb-2">Can I use the generated music commercially?</h3>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  Our AI music generation is powered by third-party providers. Commercial usage rights depend on their current terms, which may change. Please review the current terms of our AI provider before using music commercially. We recommend checking the Terms of Service for the latest information.
+                </p>
+              </div>
+
+              <div className="p-6 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+                <h3 className="font-semibold text-lg mb-2">Who owns the songs I generate?</h3>
+                <p className="text-zinc-600 dark:text-zinc-400">
+                  You retain ownership of your input prompts and ideas. However, the AI-generated output is subject to the terms of our third-party AI providers. Ownership rights may vary based on their policies, which are subject to change. See our Terms of Service for details.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* CTA Section */}
         <section className="px-6 py-20">
           <div className="max-w-4xl mx-auto text-center">

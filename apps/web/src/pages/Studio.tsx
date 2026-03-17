@@ -693,34 +693,36 @@ function Studio() {
                           )}
                         </div>
                         
-                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
-                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Parentheses () — Two Uses Only</p>
-                          <div className="space-y-2">
-                            <div>
-                              <p className="text-zinc-700 dark:text-zinc-300 font-medium">1. Backing Vocals (in [Verse], [Chorus], [Bridge], etc.)</p>
-                              <p className="text-zinc-600 dark:text-zinc-500">Sung phrases and sounds:</p>
-                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(ooh yeah)</code>, <code className="text-green-600 dark:text-green-400">(whoa-oh-oh)</code>, <code className="text-green-600 dark:text-green-400">(la la la hey)</code>, <code className="text-green-600 dark:text-green-400">(mmm mmm)</code></p>
-                            </div>
-                            {selectedModel === 'minimax/music-2.5' && (
+                        {selectedModel === 'minimax/music-2.5' && (
+                          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+                            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Parentheses () — Two Uses Only</p>
+                            <div className="space-y-2">
+                              <div>
+                                <p className="text-zinc-700 dark:text-zinc-300 font-medium">1. Backing Vocals (in [Verse], [Chorus], [Bridge], etc.)</p>
+                                <p className="text-zinc-600 dark:text-zinc-500">Sung phrases and sounds:</p>
+                                <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(ooh yeah)</code>, <code className="text-green-600 dark:text-green-400">(whoa-oh-oh)</code>, <code className="text-green-600 dark:text-green-400">(la la la hey)</code>, <code className="text-green-600 dark:text-green-400">(mmm mmm)</code></p>
+                              </div>
                               <div>
                                 <p className="text-zinc-700 dark:text-zinc-300 font-medium">2. Instruments (only in [Solo], [Inst], [Interlude])</p>
                                 <p className="text-zinc-600 dark:text-zinc-500">Describe the instrument and style:</p>
                                 <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Guitar solo - slow, mournful, bluesy)</code></p>
                                 <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Piano and strings building intensity)</code></p>
                               </div>
-                            )}
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
-                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
-                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">❌ Do NOT Use</p>
-                          <div className="space-y-1 text-zinc-600 dark:text-zinc-500">
-                            <p>• Emotional cues: <code className="text-red-500">(romantic)</code>, <code className="text-red-500">(sad)</code>, <code className="text-red-500">(angry)</code> — singer will say these words</p>
-                            <p>• Scene descriptions: <code className="text-red-500">(Soft spray of water)</code>, <code className="text-red-500">(Wind building)</code></p>
-                            <p>• Lyrics after instruments: <code className="text-red-500">(Guitar) then lyrics here</code></p>
-                            <p>• Multiple groups: <code className="text-red-500">(ooh) (ah) on same line</code></p>
+                        {selectedModel === 'minimax/music-2.5' && (
+                          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+                            <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">❌ Do NOT Use</p>
+                            <div className="space-y-1 text-zinc-600 dark:text-zinc-500">
+                              <p>• Emotional cues: <code className="text-red-500">(romantic)</code>, <code className="text-red-500">(sad)</code>, <code className="text-red-500">(angry)</code> — singer will say these words</p>
+                              <p>• Scene descriptions: <code className="text-red-500">(Soft spray of water)</code>, <code className="text-red-500">(Wind building)</code></p>
+                              <p>• Lyrics after instruments: <code className="text-red-500">(Guitar) then lyrics here</code></p>
+                              <p>• Multiple groups: <code className="text-red-500">(ooh) (ah) on same line</code></p>
+                            </div>
                           </div>
-                        </div>
+                        )}
                         
                         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
                           <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Example Structure</p>
@@ -743,16 +745,16 @@ Driving through the night
 : `[Verse]
 My car is cool and dusty
 Every mile tells a story
-(ooh yeah) Singing loud
+Singing loud in the summer heat
 
 [Chorus]
 Driving through the night
-(whoa-oh-oh) Under starlight
-(ooh) Feeling so right
+Under starlight
+Feeling so right
 
 [Bridge]
 Chrome catching memories
-Of summer heat`}
+Of all the miles we've driven`}
                           </pre>
                         </div>
                       </div>

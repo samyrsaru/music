@@ -588,7 +588,7 @@ Begin:`
         input: {
           prompt: lyricsPrompt,
           max_tokens: 800,
-          temperature: 0.7,
+          temperature: 0.8,
           system_prompt: "You are a songwriting assistant. You write only song lyrics, nothing else. Never include introductions, explanations, or metadata. Just output the lyrics directly."
         }
       }) as any

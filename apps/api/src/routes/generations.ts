@@ -533,15 +533,26 @@ app.post('/lyrics', async (c) => {
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
 - Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
-- DO include backing vocals and ad-libs - each on its OWN separate line with ONLY sung vocal sounds in parentheses
-- ONLY use actual sung sounds: ooh, ah, whoa, la, hey, yeah, mmm, etc.
-- Examples:
+- Include backing vocals and ad-libs only when it makes sense for the song - not every song needs them. Use sparingly, not on every line
+- For backing vocals, use ONLY actual sung sounds in parentheses: ooh, ah, whoa, la, hey, yeah, mmm, etc.
+- Examples of valid backing vocals:
   (oooh oooh oooh)
   (whoa-oh-oh yeah)
   (la la la hey)
   (mmm mmm)
   (ah ah ah)
-- NEVER write descriptions like (soft vocals), (whispered delivery), (backing vocals rise), (ad-libs float), (strings building), (beat drops) - these are NOT lyrics
+- Vocal delivery cues like (whispered) or (belted) are allowed when needed for expression - put them directly in parentheses on the line
+- For instrumental sections, use [Solo] or [Inst] tags, then describe the instrument in parentheses
+- CORRECT format for instrumental descriptions:
+  [Solo]
+  (Guitar solo - soft, shimmering notes echo over the spray)
+  
+  [Inst]
+  (Soft piano notes building in intensity)
+- INCORRECT formats (DO NOT USE):
+  ❌ (Guitar solo) [description in square brackets]
+  ❌ [Square brackets around descriptions] 
+  ❌ Multiple () groups on one line
 - NEVER put multiple parenthetical groups on the same line`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
@@ -628,6 +639,13 @@ Begin:`
       generatedLyrics = generatedLyrics.replace(/^[\s]*\(?beat drops?\)?[\s]*$/gim, '')
       generatedLyrics = generatedLyrics.replace(/^[\s]*\(?guitar (enters?|solo)\)?[\s]*$/gim, '')
       generatedLyrics = generatedLyrics.replace(/^[\s]*\(?drums (kick in|enter)\)?[\s]*$/gim, '')
+      
+      // Split multiple parenthetical groups on the same line into separate lines
+      // e.g., "(la la la hey) (mmm mmm) (ooh ooh)" becomes separate lines
+      generatedLyrics = generatedLyrics.replace(/^\s*\([^)]+\)\s+\([^)]+\).*$/gim, (match) => {
+        const matches = match.match(/\([^)]+\)/g)
+        return matches ? matches.join('\n') : match
+      })
       
       // Clean up any empty lines created by the removals
       generatedLyrics = generatedLyrics.replace(/\n\n\n+/g, '\n\n')

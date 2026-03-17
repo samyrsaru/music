@@ -73,6 +73,11 @@ function cleanLlmOutput(output: any, preserveNewlines: boolean = false): string 
   text = text.replace(/^(title[:\-]?\s*)/i, '')
   text = text.replace(/^\[?INST\]?\s*/i, '')
   text = text.replace(/\s*\[\/INST\]\s*$/i, '')
+  // Remove explanatory prefixes
+  text = text.replace(/^(note:?\s*this[^.]*\.\s*)/i, '')
+  text = text.replace(/^(this style description is for[^.]*\.\s*)/i, '')
+  text = text.replace(/^(description:?\s*)/i, '')
+  text = text.replace(/^(the music style is[^.]*\.\s*)/i, '')
   
   // Only remove newlines for titles/single-line outputs
   if (!preserveNewlines) {
@@ -93,7 +98,7 @@ function isValidTitle(title: string): boolean {
     return false
   }
   // Check if it contains section markers (shouldn't be in a title)
-  if (/\[(Verse|Chorus|Bridge)\]/i.test(title)) {
+  if (/\[(Verse|Chorus|Bridge|Intro|Outro|Hook|Drop|Pre Chorus|Post Chorus|Build Up|Interlude|Break|Transition|Solo|Inst)\]/i.test(title)) {
     console.log(`🎵 [NAME] Invalid: contains section markers`)
     return false
   }
@@ -109,6 +114,15 @@ function isValidTitle(title: string): boolean {
 // Helper function to validate lyrics format with model-specific constraints
 function validateLyrics(lyrics: string, modelId: string = DEFAULT_MODEL): boolean {
   const model = getModelConfig(modelId)
+  const isAdvancedModel = modelId === 'minimax/music-2.5'
+  
+  // For advanced models, accept any valid section tag
+  if (isAdvancedModel) {
+    const hasSection = /\[(Verse|Chorus|Intro|Outro|Bridge|Hook|Drop|Solo|Inst|Build Up|Pre Chorus|Post Chorus|Interlude|Break|Transition)\]/i.test(lyrics)
+    const length = lyrics.length
+    return hasSection && length >= model.constraints.lyrics.min && length <= model.constraints.lyrics.max
+  }
+  
   // Must have at least one verse and one chorus
   const hasVerse = /\[Verse\]/i.test(lyrics)
   const hasChorus = /\[Chorus\]/i.test(lyrics)
@@ -502,17 +516,35 @@ app.post('/lyrics', async (c) => {
   try {
     console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''} (Model: ${modelConfig.id})`)
     
-    // Generate lyrics
+    // Generate lyrics with model-specific section tags
+    const isAdvancedModel = modelConfig.id === 'minimax/music-2.5'
+    
+    const sectionTags = isAdvancedModel 
+      ? `[Intro], [Verse], [Pre Chorus], [Chorus], [Post Chorus], [Hook], [Drop], [Bridge], [Solo], [Inst], [Build Up], [Interlude], [Break], [Transition], [Outro]`
+      : `[Verse], [Chorus], [Bridge]`
+    
+    const sectionInstructions = isAdvancedModel
+      ? `Use section tags to control song structure: ${sectionTags}
+- IMPORTANT: Use exact tag format like [Verse], [Chorus], [Bridge] - NEVER use [Verse 1], [Verse 2], etc. No numbers after tags!
+- Recommended: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] as base structure
+- Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
+- Use [Inst], [Solo], [Interlude] for instrumental sections
+- Use [Break], [Transition] for dynamic changes
+- Use parenthetical directions for vocal delivery: (whispered), (belted), (softly), (powerful)
+- Use parenthetical directions for backing vocals: (hear it echo), (background harmonies)
+- Use parenthetical directions for instrumental cues: (guitar solo), (strings building), (beat drops)`
+      : `Format: [Verse], [Chorus], [Verse], [Chorus] sections minimum. Add [Bridge] and final [Chorus] if space allows. Never use numbered sections like [Verse 1] or [Verse 2].`
+    
     const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
 
 Requirements:
-- Format: [Verse], [Chorus], [Verse], [Chorus] sections minimum. Add [Bridge] and final [Chorus] if space allows
+${sectionInstructions}
 - Target length: ${Math.min(maxLength, maxLength - 100)}-${maxLength} characters
 - Maximum: ${maxLength} characters - do not exceed this
-- Prefer 2-3 substantial sections over many short ones
+- Prefer 2-4 substantial sections over many short ones
 - Each section: 6-10 lines with meaningful content
 - Rhyme scheme: AABB or ABAB
-- Start immediately with [Verse], no introductions
+- Start immediately with [Verse] or [Intro], no explanations
 
 Write substantial, complete lyrics. Make each section full and meaningful. Stay within the ${maxLength} character limit.
 
@@ -537,16 +569,26 @@ Begin:`
       
       generatedLyrics = cleanLlmOutput(lyricsOutput, true)
       
+      // Clean up numbered section tags - replace [Verse 1], [Verse 2], etc. with just [Verse]
+      generatedLyrics = generatedLyrics.replace(/\[Verse\s+\d+\]/gi, '[Verse]')
+      generatedLyrics = generatedLyrics.replace(/\[Chorus\s+\d+\]/gi, '[Chorus]')
+      generatedLyrics = generatedLyrics.replace(/\[Bridge\s+\d+\]/gi, '[Bridge]')
+      
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {
         // Find the last section marker before the limit
         const truncated = generatedLyrics.substring(0, maxLength)
-        const lastVerse = truncated.lastIndexOf('[Verse]')
-        const lastChorus = truncated.lastIndexOf('[Chorus]')
-        const lastBridge = truncated.lastIndexOf('[Bridge]')
+        const sectionMarkers = isAdvancedModel
+          ? ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]', '[Hook]', '[Drop]', '[Pre Chorus]', '[Post Chorus]', '[Build Up]', '[Interlude]', '[Break]', '[Transition]', '[Solo]', '[Inst]']
+          : ['[Verse]', '[Chorus]', '[Bridge]']
         
-        // Find the last section start
-        const lastSection = Math.max(lastVerse, lastChorus, lastBridge)
+        let lastSection = 0
+        for (const marker of sectionMarkers) {
+          const pos = truncated.lastIndexOf(marker)
+          if (pos > lastSection) {
+            lastSection = pos
+          }
+        }
         
         if (lastSection > 0) {
           // Keep everything up to the last complete section
@@ -563,13 +605,18 @@ Begin:`
         console.log(`✅ [LYRICS] Valid format on attempt ${lyricsAttempts}`)
         break
       } else {
-        console.log(`⚠️ [LYRICS] Invalid format on attempt ${lyricsAttempts}: missing Verse/Chorus or wrong length`)
+        console.log(`⚠️ [LYRICS] Invalid format on attempt ${lyricsAttempts}: missing required sections or wrong length`)
         if (lyricsAttempts >= maxLyricsAttempts) {
-          // Force format by wrapping in verse/chorus if missing
-          if (!generatedLyrics.includes('[Verse]')) {
+          // Check if any section tags exist (for advanced models, any tag is acceptable)
+          const hasAnySection = /\[(Verse|Chorus|Intro|Outro|Bridge|Hook|Drop|Pre Chorus|Post Chorus|Build Up|Interlude|Break|Transition|Solo|Inst)\]/i.test(generatedLyrics)
+          
+          if (!hasAnySection) {
+            // Force format by wrapping in verse if no sections at all
             generatedLyrics = `[Verse]\n${generatedLyrics}`
           }
-          if (!generatedLyrics.includes('[Chorus]') && generatedLyrics.length > 200) {
+          
+          // For basic models, ensure chorus exists if lyrics are long enough
+          if (!isAdvancedModel && !generatedLyrics.includes('[Chorus]') && generatedLyrics.length > 200) {
             // Insert chorus in the middle
             const midPoint = Math.floor(generatedLyrics.length / 2)
             generatedLyrics = generatedLyrics.slice(0, midPoint) + '\n\n[Chorus]\n' + generatedLyrics.slice(midPoint)
@@ -581,22 +628,38 @@ Begin:`
     // Generate matching style based on the topic and mood
     console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
     
-    const stylePrompt = `Describe the music style for a song about "${topic}"${mood ? ` with ${mood} mood` : ''}.
+    const stylePrompt = `Create a detailed music style description for a song about "${topic}"${mood ? ` with ${mood} mood` : ''}.
 
-Format: Genre, mood, key instruments/vibe (10-100 characters)
+Follow this structure: [Genre], [Mood/Emotion], [Vocal style], [Tempo], [Key instruments], [Era/Style reference], [Production style]
+
+Guidelines:
+- Genre: Choose a specific genre (Pop, Indie folk, Jazz, Blues, EDM, Hip-hop, Rock, Classical, Country, R&B, etc.)
+- Mood: Describe the emotional tone (melancholic, uplifting, aggressive, dreamy, hopeful, introspective, confident)
+- Vocal style: Specify gender and delivery (male vocals, female vocals, breathy, powerful, soulful, clear, operatic, raspy)
+- Tempo: Include specific BPM or tempo description (slow, 80 BPM, driving 125 BPM, uptempo)
+- Instruments: Name specific instruments from these categories for best results:
+  - Strings: acoustic guitar, electric guitar (clean/distorted), bass guitar, upright bass, violin, cello, orchestral strings
+  - Keys: piano, electric piano, synth pads, organ, harpsichord
+  - Brass & Woodwinds: trumpet, muted trumpet, trombone, saxophone, flute, clarinet, brass section
+  - Drums & Percussion: drum kit, brushed drums, electronic drums, 808 bass, hi-hats, claps
+  - Electronic: synth bass, lead synths, atmospheric pads, arpeggiated synths, risers, sweeps
+- Era/Style: Add references if relevant (1980s Minneapolis sound, vintage vinyl, classic Motown, 90s grunge)
+- Production: Mention sonic qualities (lo-fi, warm reverb, wide soundstage, intimate, distorted, crisp)
+
 Examples:
-- "Upbeat indie pop, energetic, synth guitars, summer vibes"
-- "Melancholic acoustic folk, gentle guitar, rainy atmosphere"
-- "Electronic dance, high energy, pulsing beats, club ready"
+- "Indie folk, melancholic introspective longing, soft breathy female vocals, slow relaxed pace, fingerpicked acoustic guitar and gentle piano, coffee shop vibes, warm reverb with vinyl texture"
+- "Soulful Blues, melancholy rainy night atmosphere, powerful male vocals with grit, slow 70 BPM tempo, electric guitar with wah pedal and walking bass, classic 1960s Chicago blues, warm tube saturation"
+- "Pop-Dance Progressive House, uplifting anthemic euphoric, bright female vocal with Auto-Tune, driving 125 BPM, four-on-the-floor kick with synth bass and atmospheric pads, modern club production, wide soundstage"
+- "Lo-fi hip-hop, chill study vibes dreamy, soft spoken male vocals, relaxed 75 BPM, Rhodes piano and vinyl crackle with laid-back drums, nostalgic 90s boom-bap aesthetic, warm midrange and tape saturation"
 
-Style:`
+Style description:`
 
     const styleOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
       input: {
         prompt: stylePrompt,
-        max_tokens: 100,
-        temperature: 0.6,
-        system_prompt: "You are a music style expert. You describe music styles in a short, specific format. Never use quotes or introductions. Just output the style description directly."
+        max_tokens: 200,
+        temperature: 0.7,
+        system_prompt: "You are a music style description generator. Output ONLY the style description text. Never start with phrases like 'Note:', 'This style', 'Description:', or any introductory text. Never include explanations. Output the description directly as plain text with no quotes."
       }
     }) as any
 

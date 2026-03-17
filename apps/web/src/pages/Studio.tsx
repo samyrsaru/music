@@ -668,7 +668,7 @@ function Studio() {
                       <div className="mt-4 space-y-4 text-sm">
                         <div>
                           <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
-                            Section Tags {selectedModel === 'minimax/music-2.5' ? '(Pro - 14 tags)' : '(Standard - 5 tags)'}
+                            Section Tags
                           </p>
                           {selectedModel === 'minimax/music-2.5' ? (
                             <div className="grid grid-cols-2 gap-2 text-xs">

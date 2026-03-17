@@ -358,28 +358,83 @@ function Studio() {
                   ))}
                 </div>
 
-                {/* Model Selector */}
+                {/* Pro Mode Toggle */}
                 {availableModels.length > 0 && (
-                  <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
-                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-                      AI Model
-                    </label>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => setSelectedModel(e.target.value)}
-                      className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setSelectedModel(selectedModel === 'minimax/music-2.5' ? 'minimax/music-1.5' : 'minimax/music-2.5')}
+                      className={`flex items-center justify-between w-full py-2.5 px-4 rounded-lg border transition-all ${
+                        selectedModel === 'minimax/music-2.5'
+                          ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800'
+                          : 'bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800'
+                      }`}
                     >
-                      {availableModels.map((model) => (
-                        <option key={model.id} value={model.id}>
-                          {model.id === 'minimax/music-1.5' ? 'Standard' : 'Pro'} - {model.cost} credits
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
-                      {selectedModel === 'minimax/music-1.5' 
-                        ? 'Standard quality, shorter lyrics (10-600 chars)'
-                        : 'Higher quality, longer lyrics (1-3,500 chars), longer prompts (up to 2,000 chars)'}
-                    </p>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-5 rounded-full relative transition-colors ${
+                          selectedModel === 'minimax/music-2.5' ? 'bg-purple-500' : 'bg-zinc-300 dark:bg-zinc-700'
+                        }`}>
+                          <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all ${
+                            selectedModel === 'minimax/music-2.5' ? 'left-5' : 'left-0.5'
+                          }`} />
+                        </div>
+                        <div className="flex flex-col items-start">
+                          <div className="flex items-center gap-1.5">
+                            <span className={`text-sm font-medium ${
+                              selectedModel === 'minimax/music-2.5' ? 'text-purple-700 dark:text-purple-300' : 'text-zinc-700 dark:text-zinc-300'
+                            }`}>
+                              Pro Mode
+                            </span>
+                            {/* Info tooltip */}
+                            <div className="group relative">
+                              <svg className="w-4 h-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-72 p-3 bg-zinc-900 dark:bg-zinc-800 text-white text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                                <div className="space-y-2">
+                                  <p className="font-medium text-purple-300">Pro Mode Features (50 credits):</p>
+                                  <ul className="space-y-1.5 text-zinc-300">
+                                    <li className="flex gap-2">
+                                      <span className="text-purple-400">•</span>
+                                      <span><strong className="text-white">Better vocals</strong> — more natural-sounding singing with realistic timbre, breathing, and pitch transitions</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="text-purple-400">•</span>
+                                      <span><strong className="text-white">Better instrumentation</strong> — expanded sound library including orchestral and traditional instruments, with cleaner separation</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="text-purple-400">•</span>
+                                      <span><strong className="text-white">Precise structure control</strong> — 14+ section tags let you control exactly how the song is arranged</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="text-purple-400">•</span>
+                                      <span><strong className="text-white">Style-aware mixing</strong> — automatic mixing adjustments based on genre (rock distortion, jazz warmth, etc.)</span>
+                                    </li>
+                                    <li className="flex gap-2">
+                                      <span className="text-purple-400">•</span>
+                                      <span><strong className="text-white">Up to 3,500 characters</strong> for lyrics</span>
+                                    </li>
+                                  </ul>
+                                </div>
+                                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-zinc-900 dark:border-t-zinc-800"></div>
+                              </div>
+                            </div>
+                          </div>
+                          {selectedModel === 'minimax/music-2.5' && (
+                            <span className="text-xs text-zinc-500">50 credits</span>
+                          )}
+                        </div>
+                      </div>
+                      {selectedModel === 'minimax/music-2.5' && (
+                        <span className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 font-medium">
+                          Active
+                        </span>
+                      )}
+                    </button>
+                    {selectedModel === 'minimax/music-2.5' && (
+                      <p className="text-xs text-purple-600 dark:text-purple-400 px-1">
+                        Up to 3,500 characters for lyrics • Better vocals & instruments
+                      </p>
+                    )}
                   </div>
                 )}
 

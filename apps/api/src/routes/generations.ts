@@ -559,7 +559,7 @@ Bridge lines here
 Line one here
 Line two here`
     
-    const lyricsPrompt = `Write song lyrics about: ${topic}.
+    const lyricsPrompt = `Write song lyrics based on this concept: ${topic}.
 
 Requirements:
 ${sectionInstructions}
@@ -656,7 +656,7 @@ Begin:`
     // Generate matching style based on the topic
     console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
     
-    const stylePrompt = `Create a detailed music style description for a song about "${topic}".
+    const stylePrompt = `Create a detailed music style description for a song based on this concept: "${topic}".
 
 Follow this structure: [Genre], [Mood/Emotion], [Vocal style], [Tempo], [Key instruments], [Era/Style reference], [Production style]
 

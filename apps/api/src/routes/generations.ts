@@ -505,7 +505,7 @@ app.post('/lyrics', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { topic, mood, model: modelId } = await c.req.json()
+  const { topic, model: modelId } = await c.req.json()
   
   if (!topic?.trim()) {
     return c.json({ error: 'Topic is required' }, 400)
@@ -517,7 +517,7 @@ app.post('/lyrics', async (c) => {
   const minLength = modelConfig.constraints.lyrics.min
 
   try {
-    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''} (Model: ${modelConfig.id})`)
+    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" (Model: ${modelConfig.id})`)
     
     // Generate lyrics with model-specific section tags
     const isAdvancedModel = modelConfig.id === 'minimax/music-2.5'
@@ -559,7 +559,7 @@ Bridge lines here
 Line one here
 Line two here`
     
-    const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
+    const lyricsPrompt = `Write song lyrics about: ${topic}.
 
 Requirements:
 ${sectionInstructions}
@@ -653,10 +653,10 @@ Begin:`
     // Log the final generated lyrics
     console.log(`🎤 [LYRICS] Final lyrics (${generatedLyrics.length} chars):\n---\n${generatedLyrics}\n---`)
 
-    // Generate matching style based on the topic and mood
+    // Generate matching style based on the topic
     console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
     
-    const stylePrompt = `Create a detailed music style description for a song about "${topic}"${mood ? ` with ${mood} mood` : ''}.
+    const stylePrompt = `Create a detailed music style description for a song about "${topic}".
 
 Follow this structure: [Genre], [Mood/Emotion], [Vocal style], [Tempo], [Key instruments], [Era/Style reference], [Production style]
 
@@ -700,7 +700,7 @@ Style description:`
     
     // Fallback if style is too short
     if (generatedStyle.length < modelConfig.constraints.prompt.min) {
-      generatedStyle = `${mood || 'Upbeat'} ${topic.split(' ').slice(0, 3).join(' ')} style music`
+      generatedStyle = `Upbeat ${topic.split(' ').slice(0, 3).join(' ')} style music`
     }
 
     console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)

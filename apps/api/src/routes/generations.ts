@@ -531,7 +531,7 @@ app.post('/lyrics', async (c) => {
 - IMPORTANT: Use exact tag format like [Verse], [Chorus], [Bridge] - NEVER use [Verse 1], [Verse 2], etc. No numbers after tags!
 - Recommended: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] as base structure
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
-- Use [Inst], [Solo], [Interlude] for instrumental sections
+- Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
 - For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
 - DO include backing vocals and ad-libs on their own line with the content in parentheses: (La la la), (Oh, stay), (Can you feel it)
@@ -599,6 +599,9 @@ Begin:`
       generatedLyrics = generatedLyrics.replace(/\[Verse\s+\d+\]/gi, '[Verse]')
       generatedLyrics = generatedLyrics.replace(/\[Chorus\s+\d+\]/gi, '[Chorus]')
       generatedLyrics = generatedLyrics.replace(/\[Bridge\s+\d+\]/gi, '[Bridge]')
+      
+      // Convert specific instrument solos like [Guitar solo] to just [Solo]
+      generatedLyrics = generatedLyrics.replace(/\[\w+\s+Solo\]/gi, '[Solo]')
       
       // Remove trailing rhyme scheme annotations like (A), (B), (C), etc. at end of lines
       generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/gm, '')

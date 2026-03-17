@@ -644,6 +644,92 @@ function Studio() {
                       )}
                     </div>
                   )}
+                  
+                  {/* Lyrics Format Guide */}
+                  <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
+                    <details className="group">
+                      <summary className="flex items-center gap-2 cursor-pointer text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        <span className="text-green-500">📋</span>
+                        Lyrics Format Guide
+                        <svg className="w-4 h-4 ml-auto transition-transform group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </summary>
+                      <div className="mt-4 space-y-4 text-sm">
+                        <div>
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Section Tags</p>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div className="space-y-1">
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Intro]</code> Song opening</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Verse]</code> Story / narrative</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Pre Chorus]</code> Build-up</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Chorus]</code> Main hook</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Post Chorus]</code> After-hook</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Hook]</code> Catchy phrase</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Drop]</code> Energy release (EDM)</p>
+                            </div>
+                            <div className="space-y-1">
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Bridge]</code> Contrast section</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Solo]</code> Instrument spotlight</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Inst]</code> Instrumental section</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Build Up]</code> Intensity increase</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Interlude]</code> Instrumental break</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Break]</code> Rhythmic pause</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Transition]</code> Section connector</p>
+                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Outro]</code> Song ending</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Parentheses () — Two Uses Only</p>
+                          <div className="space-y-2">
+                            <div>
+                              <p className="text-zinc-700 dark:text-zinc-300 font-medium">1. Backing Vocals (in [Verse], [Chorus], [Bridge], etc.)</p>
+                              <p className="text-zinc-600 dark:text-zinc-500">Sung phrases and sounds:</p>
+                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(ooh yeah)</code>, <code className="text-green-600 dark:text-green-400">(whoa-oh-oh)</code>, <code className="text-green-600 dark:text-green-400">(la la la hey)</code>, <code className="text-green-600 dark:text-green-400">(mmm mmm)</code></p>
+                            </div>
+                            <div>
+                              <p className="text-zinc-700 dark:text-zinc-300 font-medium">2. Instruments (only in [Solo], [Inst], [Interlude])</p>
+                              <p className="text-zinc-600 dark:text-zinc-500">Describe the instrument and style:</p>
+                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Guitar solo - slow, mournful, bluesy)</code></p>
+                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Piano and strings building intensity)</code></p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">❌ Do NOT Use</p>
+                          <div className="space-y-1 text-zinc-600 dark:text-zinc-500">
+                            <p>• Emotional cues: <code className="text-red-500">(romantic)</code>, <code className="text-red-500">(sad)</code>, <code className="text-red-500">(angry)</code> — singer will say these words</p>
+                            <p>• Scene descriptions: <code className="text-red-500">(Soft spray of water)</code>, <code className="text-red-500">(Wind building)</code></p>
+                            <p>• Lyrics after instruments: <code className="text-red-500">(Guitar) then lyrics here</code></p>
+                            <p>• Multiple groups: <code className="text-red-500">(ooh) (ah) on same line</code></p>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Example Structure</p>
+                          <pre className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded text-xs text-zinc-600 dark:text-zinc-400 overflow-x-auto">
+{`[Intro]
+(Piano - soft, building gently)
+
+[Verse]
+My car is cool and dusty
+Every mile tells a story
+
+[Chorus]
+Driving through the night
+(ooh yeah) Under starlight
+(whoa-oh-oh) Feeling so right
+
+[Solo]
+(Guitar solo - slow, mournful, bluesy)`}
+                          </pre>
+                        </div>
+                      </div>
+                    </details>
+                  </div>
                 </div>
 
                 {/* Divider */}

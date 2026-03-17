@@ -529,30 +529,31 @@ app.post('/lyrics', async (c) => {
     const sectionInstructions = isAdvancedModel
       ? `Use section tags to control song structure: ${sectionTags}
 - IMPORTANT: Use exact tag format like [Verse], [Chorus], [Bridge] - NEVER use [Verse 1], [Verse 2], etc. No numbers after tags!
-- Recommended: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] as base structure
+- ONLY these section tags are valid: ${sectionTags}
+- NEVER use: [End], [Finish], [Start], or any other tags not in the list above
+- Recommended structure: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] as base
+- [Outro] should be the LAST section - NEVER put [Verse] or [Chorus] after [Outro]
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
 - Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
 - Include backing vocals and ad-libs only when it makes sense for the song - not every song needs them. Use sparingly, not on every line
-- For backing vocals, use ONLY actual sung sounds in parentheses: ooh, ah, whoa, la, hey, yeah, mmm, etc.
-- Examples of valid backing vocals:
-  (oooh oooh oooh)
-  (whoa-oh-oh yeah)
-  (la la la hey)
-  (mmm mmm)
-  (ah ah ah)
-- Vocal delivery cues like (whispered) or (belted) are allowed when needed for expression - put them directly in parentheses on the line
-- For instrumental sections, use [Solo] or [Inst] tags, then describe the instrument in parentheses
-- CORRECT format for instrumental descriptions:
-  [Solo]
-  (Guitar solo - soft, shimmering notes echo over the spray)
-  
-  [Inst]
-  (Soft piano notes building in intensity)
-- INCORRECT formats (DO NOT USE):
-  ❌ (Guitar solo) [description in square brackets]
-  ❌ [Square brackets around descriptions] 
-  ❌ Multiple () groups on one line
+- Parentheses are ONLY for two things: backing vocals OR musical instruments
+- Backing vocals (in [Verse], [Chorus], [Bridge], etc. - NOT in instrumental sections): sung phrases and sounds
+  Examples: (ooh yeah), (whoa-oh-oh), (la la la hey), (mmm mmm), (ah ah)
+- Instrumental sections [Intro], [Solo], [Inst], [Interlude] are OPTIONAL - most songs don't need them
+- If you use instrumental sections, keep them BRIEF: 1-2 instruments maximum
+- CORRECT instrumental format (describe the instrument and style):
+    [Solo]
+    (Guitar solo - slow, mournful, bluesy)
+    
+    [Inst]
+    (Piano and strings building intensity)
+- NEVER write lyrics after instrumental cues on the same line
+- DO NOT write instrumental cues in [Verse], [Chorus], [Bridge], etc. - only backing vocals there
+- Valid instruments: Guitar, Piano, Strings, Drums, Bass, Synth - describe how they sound
+- DO NOT write emotional delivery cues like (romantic), (sad), (angry) - MiniMax sings these as lyrics
+- DO NOT write scene descriptions: (Soft spray of water), (Wind building), (Water sounds), (Traffic noise)
+- DO NOT write environmental sounds as instruments: (Engine notes), (Wind building), (Water sounds), (Traffic noise)
 - NEVER put multiple parenthetical groups on the same line`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
@@ -604,12 +605,15 @@ Begin:`
         input: {
           prompt: lyricsPrompt,
           max_tokens: 800,
-          temperature: 0.8,
+          temperature: 0.6,
           system_prompt: "You are a songwriting assistant. You write only song lyrics, nothing else. Never include introductions, explanations, or metadata. Just output the lyrics directly."
         }
       }) as any
       
       generatedLyrics = cleanLlmOutput(lyricsOutput, true)
+      
+      // Log lyrics after basic cleanup but before our modifications
+      console.log(`📝 [LYRICS FROM REPLICATE] Attempt ${lyricsAttempts}:\n---\n${generatedLyrics}\n---`)
       
       // Clean up numbered section tags - replace [Verse 1], [Verse 2], etc. with just [Verse]
       generatedLyrics = generatedLyrics.replace(/\[Verse\s+\d+\]/gi, '[Verse]')
@@ -618,6 +622,8 @@ Begin:`
       
       // Convert specific instrument solos like [Guitar solo] to just [Solo]
       generatedLyrics = generatedLyrics.replace(/\[\w+\s+Solo\]/gi, '[Solo]')
+      
+
       
       // Remove trailing rhyme scheme annotations like (A), (B), (C), etc. at end of lines
       generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/gm, '')
@@ -640,6 +646,10 @@ Begin:`
       generatedLyrics = generatedLyrics.replace(/^[\s]*\(?guitar (enters?|solo)\)?[\s]*$/gim, '')
       generatedLyrics = generatedLyrics.replace(/^[\s]*\(?drums (kick in|enter)\)?[\s]*$/gim, '')
       
+      // Remove obvious non-lyrical scene descriptions (engine sounds, wind, etc.)
+      // Only removes standalone parentheticals that are clearly scene sounds, not lyrics
+      generatedLyrics = generatedLyrics.replace(/^\s*\((?:engine|wind|water|traffic|ocean|waves|rain|thunder)\s+(?:sound|noise|building|swelling)\)\s*$/gim, '')
+      
       // Split multiple parenthetical groups on the same line into separate lines
       // e.g., "(la la la hey) (mmm mmm) (ooh ooh)" becomes separate lines
       generatedLyrics = generatedLyrics.replace(/^\s*\([^)]+\)\s+\([^)]+\).*$/gim, (match) => {
@@ -647,8 +657,11 @@ Begin:`
         return matches ? matches.join('\n') : match
       })
       
-      // Clean up any empty lines created by the removals
+      // Clean up excessive empty lines (3+ newlines -> 2 newlines)
       generatedLyrics = generatedLyrics.replace(/\n\n\n+/g, '\n\n')
+      
+      // Minimal cleanup - only remove obviously invalid tags like [End]
+      generatedLyrics = generatedLyrics.replace(/\[End\]/gi, '')
       
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {

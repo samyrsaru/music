@@ -535,18 +535,15 @@ app.post('/lyrics', async (c) => {
 - Use [Break], [Transition] for dynamic changes
 - For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
 - DO include backing vocals and ad-libs - each on its OWN separate line with ONLY sung vocal sounds in parentheses
-- NEVER write descriptions like (soft vocals), (whispered delivery), (backing vocals rise), (ad-libs float) - these are NOT lyrics
 - ONLY use actual sung sounds: ooh, ah, whoa, la, hey, yeah, mmm, etc.
-- Examples of GOOD backing vocals:
+- Examples:
   (oooh oooh oooh)
   (whoa-oh-oh yeah)
   (la la la hey)
   (mmm mmm)
   (ah ah ah)
-- NEVER put multiple parenthetical groups on the same line
-- DO include instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
-- NEVER put cues inline with lyrics - each cue must be on its own separate line
-- NEVER write "(Backing vocals)" or "(Ad-libs)" as labels`
+- NEVER write descriptions like (soft vocals), (whispered delivery), (backing vocals rise), (ad-libs float), (strings building), (beat drops) - these are NOT lyrics
+- NEVER put multiple parenthetical groups on the same line`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
 [Intro]
@@ -626,6 +623,15 @@ Begin:`
       
       // Remove descriptive labels that are not actual sung sounds
       generatedLyrics = generatedLyrics.replace(/\s*\((soft vocals|whispered delivery|belted vocals|powerful vocals|backing vocals rise|ad-libs float|harmonies|backing vocals)\)\s*/gi, '')
+      
+      // Remove production/instrumental cues that should not be sung: strings building, beat drops, etc.
+      generatedLyrics = generatedLyrics.replace(/^[\s]*\(?strings building\)?[\s]*$/gim, '')
+      generatedLyrics = generatedLyrics.replace(/^[\s]*\(?beat drops?\)?[\s]*$/gim, '')
+      generatedLyrics = generatedLyrics.replace(/^[\s]*\(?guitar (enters?|solo)\)?[\s]*$/gim, '')
+      generatedLyrics = generatedLyrics.replace(/^[\s]*\(?drums (kick in|enter)\)?[\s]*$/gim, '')
+      
+      // Clean up any empty lines created by the removals
+      generatedLyrics = generatedLyrics.replace(/\n\n\n+/g, '\n\n')
       
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {

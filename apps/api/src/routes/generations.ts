@@ -10,20 +10,44 @@ const replicate = new Replicate({
 
 const app = new Hono()
 
-// Model configuration - centralized constraints and pricing
-const MODEL_CONFIG = {
-  id: 'minimax/music-1.5',
-  cost: 10, // Credits per song generation
-  constraints: {
-    lyrics: {
-      min: 10,
-      max: 600,
-    },
-    prompt: {
-      min: 10,
-      max: 300,
+// Model configurations - centralized constraints and pricing
+const AVAILABLE_MODELS = [
+  {
+    id: 'minimax/music-1.5',
+    cost: 10,
+    constraints: {
+      lyrics: {
+        min: 10,
+        max: 600,
+      },
+      prompt: {
+        min: 10,
+        max: 300,
+      }
+    }
+  },
+  {
+    id: 'minimax/music-2.5',
+    cost: 50,
+    constraints: {
+      lyrics: {
+        min: 1,
+        max: 3500,
+      },
+      prompt: {
+        min: 0,
+        max: 2000,
+      }
     }
   }
+]
+
+// Default model for backwards compatibility
+const DEFAULT_MODEL = 'minimax/music-1.5'
+
+// Helper to get model config by ID
+function getModelConfig(modelId: string) {
+  return AVAILABLE_MODELS.find(m => m.id === modelId) || AVAILABLE_MODELS[0]
 }
 
 // Helper function to clean LLM output
@@ -82,19 +106,20 @@ function isValidTitle(title: string): boolean {
   return true
 }
 
-// Helper function to validate lyrics format
-function validateLyrics(lyrics: string): boolean {
+// Helper function to validate lyrics format with model-specific constraints
+function validateLyrics(lyrics: string, modelId: string = DEFAULT_MODEL): boolean {
+  const model = getModelConfig(modelId)
   // Must have at least one verse and one chorus
   const hasVerse = /\[Verse\]/i.test(lyrics)
   const hasChorus = /\[Chorus\]/i.test(lyrics)
   const length = lyrics.length
   
-  return hasVerse && hasChorus && length >= MODEL_CONFIG.constraints.lyrics.min && length <= MODEL_CONFIG.constraints.lyrics.max
+  return hasVerse && hasChorus && length >= model.constraints.lyrics.min && length <= model.constraints.lyrics.max
 }
 
-// Get model configuration
+// Get available models configuration
 app.get('/config', (c) => {
-  return c.json(MODEL_CONFIG)
+  return c.json({ models: AVAILABLE_MODELS, defaultModel: DEFAULT_MODEL })
 })
 
 // Generate music - Async with webhook
@@ -102,36 +127,39 @@ app.post('/generate', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { lyrics, prompt, originalIdea } = await c.req.json()
+  const { lyrics, prompt, originalIdea, model: modelId } = await c.req.json()
+  
+  // Get model configuration
+  const modelConfig = getModelConfig(modelId || DEFAULT_MODEL)
   
   // Server-side validation using model constraints
   const lyricsLength = lyrics?.length || 0
   const promptLength = prompt?.length || 0
   
-  if (lyricsLength < MODEL_CONFIG.constraints.lyrics.min) {
+  if (lyricsLength < modelConfig.constraints.lyrics.min) {
     return c.json({ 
-      error: `Lyrics must be at least ${MODEL_CONFIG.constraints.lyrics.min} characters`,
+      error: `Lyrics must be at least ${modelConfig.constraints.lyrics.min} characters`,
       field: 'lyrics'
     }, 400)
   }
   
-  if (lyricsLength > MODEL_CONFIG.constraints.lyrics.max) {
+  if (lyricsLength > modelConfig.constraints.lyrics.max) {
     return c.json({ 
-      error: `Lyrics must be no more than ${MODEL_CONFIG.constraints.lyrics.max} characters`,
+      error: `Lyrics must be no more than ${modelConfig.constraints.lyrics.max} characters`,
       field: 'lyrics'
     }, 400)
   }
   
-  if (promptLength < MODEL_CONFIG.constraints.prompt.min) {
+  if (promptLength < modelConfig.constraints.prompt.min) {
     return c.json({
-      error: `Prompt must be at least ${MODEL_CONFIG.constraints.prompt.min} characters`,
+      error: `Prompt must be at least ${modelConfig.constraints.prompt.min} characters`,
       field: 'prompt'
     }, 400)
   }
 
-  if (promptLength > MODEL_CONFIG.constraints.prompt.max) {
+  if (promptLength > modelConfig.constraints.prompt.max) {
     return c.json({ 
-      error: `Prompt must be no more than ${MODEL_CONFIG.constraints.prompt.max} characters`,
+      error: `Prompt must be no more than ${modelConfig.constraints.prompt.max} characters`,
       field: 'prompt'
     }, 400)
   }
@@ -139,7 +167,7 @@ app.post('/generate', async (c) => {
   const user = db.prepare('SELECT credits, lifetime_credits FROM users WHERE clerkUserId = ?')
     .get(auth.userId) as any
 
-  const songCost = MODEL_CONFIG.cost
+  const songCost = modelConfig.cost
   const totalCredits = (user?.credits || 0) + (user?.lifetime_credits || 0)
   if (!user || totalCredits < songCost) {
     return c.json({ error: 'Insufficient credits' }, 402)
@@ -226,9 +254,9 @@ Respond with only the title text, nothing else.`
   try {
     // Create pending generation record
     db.prepare(`
-      INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, originalIdea, status, createdAt)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName, originalIdea || null)
+      INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, originalIdea, status, model, createdAt)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, datetime('now'))
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName, originalIdea || null, modelConfig.id)
 
     // Start async generation with webhook
     const input = {
@@ -242,9 +270,9 @@ Respond with only the title text, nothing else.`
 
     console.log(`🔗 [WEBHOOK] Using webhook URL: ${webhookUrl}`)
 
-    // Start the prediction asynchronously with webhook
+    // Start the prediction asynchronously with webhook using the selected model
     const prediction = await replicate.predictions.create({
-      model: "minimax/music-1.5",
+      model: modelConfig.id,
       input,
       webhook: webhookUrl,
       webhook_events_filter: ["completed"]
@@ -401,11 +429,12 @@ app.post('/generate/webhook', async (c) => {
       WHERE id = ?
     `).run(generation.id)
     
-    // Refund credits to lifetime_credits pool
+    // Refund credits to lifetime_credits pool based on the model used
+    const modelConfig = getModelConfig(generation.model || DEFAULT_MODEL)
     db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + ? WHERE clerkUserId = ?')
-      .run(MODEL_CONFIG.cost, generation.clerkUserId)
+      .run(modelConfig.cost, generation.clerkUserId)
     
-    console.log(`💰 [WEBHOOK] Credits refunded to lifetime pool for user: ${generation.clerkUserId.substring(0, 8)}...`)
+    console.log(`💰 [WEBHOOK] ${modelConfig.cost} credits refunded to lifetime pool for user: ${generation.clerkUserId.substring(0, 8)}...`)
   }
 
   return c.json({ success: true })
@@ -419,7 +448,7 @@ app.get('/status/:id', async (c) => {
   const id = c.req.param('id')
   
   const generation = db.prepare(`
-    SELECT id, status, audioUrl, r2Key, lyrics, prompt, name, createdAt, completedAt, replicateId
+    SELECT id, status, audioUrl, r2Key, lyrics, prompt, name, model, createdAt, completedAt, replicateId
     FROM generations 
     WHERE id = ? AND clerkUserId = ?
   `).get(id, auth.userId) as any
@@ -447,6 +476,7 @@ app.get('/status/:id', async (c) => {
     lyrics: generation.lyrics,
     prompt: generation.prompt,
     name: generation.name,
+    model: generation.model,
     createdAt: generation.createdAt,
     completedAt: generation.completedAt,
     replicateId: generation.replicateId
@@ -458,28 +488,33 @@ app.post('/lyrics', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
-  const { topic, mood } = await c.req.json()
+  const { topic, mood, model: modelId } = await c.req.json()
   
   if (!topic?.trim()) {
     return c.json({ error: 'Topic is required' }, 400)
   }
 
+  // Get model configuration for constraints
+  const modelConfig = getModelConfig(modelId || DEFAULT_MODEL)
+  const maxLength = modelConfig.constraints.lyrics.max
+  const minLength = modelConfig.constraints.lyrics.min
+
   try {
-    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''}`)
+    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''} (Model: ${modelConfig.id})`)
     
     // Generate lyrics
     const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
 
 Requirements:
 - Format: [Verse], [Chorus], [Verse], [Chorus] sections minimum. Add [Bridge] and final [Chorus] if space allows
-- Target length: 500-600 characters
-- Maximum: 600 characters - do not exceed this
+- Target length: ${Math.min(maxLength, maxLength - 100)}-${maxLength} characters
+- Maximum: ${maxLength} characters - do not exceed this
 - Prefer 2-3 substantial sections over many short ones
 - Each section: 6-10 lines with meaningful content
 - Rhyme scheme: AABB or ABAB
 - Start immediately with [Verse], no introductions
 
-Write substantial, complete lyrics. Make each section full and meaningful. Stay within the 600 character limit.
+Write substantial, complete lyrics. Make each section full and meaningful. Stay within the ${maxLength} character limit.
 
 Begin:`
 
@@ -503,9 +538,9 @@ Begin:`
       generatedLyrics = cleanLlmOutput(lyricsOutput, true)
       
       // Ensure it fits constraints - truncate at last complete section if too long
-      if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
+      if (generatedLyrics.length > maxLength) {
         // Find the last section marker before the limit
-        const truncated = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
+        const truncated = generatedLyrics.substring(0, maxLength)
         const lastVerse = truncated.lastIndexOf('[Verse]')
         const lastChorus = truncated.lastIndexOf('[Chorus]')
         const lastBridge = truncated.lastIndexOf('[Bridge]')
@@ -524,7 +559,7 @@ Begin:`
       }
       
       // Validate format
-      if (validateLyrics(generatedLyrics)) {
+      if (validateLyrics(generatedLyrics, modelConfig.id)) {
         console.log(`✅ [LYRICS] Valid format on attempt ${lyricsAttempts}`)
         break
       } else {
@@ -568,12 +603,12 @@ Style:`
     let generatedStyle = cleanLlmOutput(styleOutput)
     
     // Ensure style fits constraints
-    if (generatedStyle.length > MODEL_CONFIG.constraints.prompt.max) {
-      generatedStyle = generatedStyle.substring(0, MODEL_CONFIG.constraints.prompt.max)
+    if (generatedStyle.length > modelConfig.constraints.prompt.max) {
+      generatedStyle = generatedStyle.substring(0, modelConfig.constraints.prompt.max)
     }
     
     // Fallback if style is too short
-    if (generatedStyle.length < MODEL_CONFIG.constraints.prompt.min) {
+    if (generatedStyle.length < modelConfig.constraints.prompt.min) {
       generatedStyle = `${mood || 'Upbeat'} ${topic.split(' ').slice(0, 3).join(' ')} style music`
     }
 
@@ -597,7 +632,7 @@ app.get('/', async (c) => {
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
   const generations = db.prepare(`
-    SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, favorite, createdAt 
+    SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, favorite, model, createdAt 
     FROM generations 
     WHERE clerkUserId = ? 
     ORDER BY createdAt DESC

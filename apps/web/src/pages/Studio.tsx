@@ -43,6 +43,11 @@ interface ModelConfig {
   }
 }
 
+interface ConfigResponse {
+  models: ModelConfig[]
+  defaultModel: string
+}
+
 function Studio() {
   const { userId, isLoaded } = useAuth()
   const { fetchWithAuth } = useApi()
@@ -58,7 +63,8 @@ function Studio() {
   const [credits, setCredits] = useState<number | null>(null)
   const [lifetimeCredits, setLifetimeCredits] = useState(0)
   const [creditsLoaded, setCreditsLoaded] = useState(false)
-  const [modelConfig, setModelConfig] = useState<ModelConfig | null>(null)
+  const [availableModels, setAvailableModels] = useState<ModelConfig[]>([])
+  const [selectedModel, setSelectedModel] = useState<string>('')
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
   const [skipReview, setSkipReview] = useState(() => {
@@ -115,8 +121,9 @@ function Studio() {
     try {
       const res = await fetch(`${API_URL}/api/generations/config`)
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setModelConfig(data)
+      const data = await res.json() as ConfigResponse
+      setAvailableModels(data.models)
+      setSelectedModel(data.defaultModel)
     } catch (err) {
       console.error('Failed to fetch constraints:', err)
     }
@@ -132,7 +139,8 @@ function Studio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          topic: songIdea
+          topic: songIdea,
+          model: selectedModel
         })
       })
       
@@ -246,7 +254,8 @@ function Studio() {
         body: JSON.stringify({
           lyrics: songLyrics,
           prompt: songPrompt,
-          originalIdea: originalConcept || songIdea
+          originalIdea: originalConcept || songIdea,
+          model: selectedModel
         })
       })
 
@@ -284,10 +293,11 @@ function Studio() {
     }
   }
 
-  const lyricsValid = !modelConfig || (lyrics.length >= modelConfig.constraints.lyrics.min && lyrics.length <= modelConfig.constraints.lyrics.max)
-  const promptValid = !modelConfig || (prompt.length >= modelConfig.constraints.prompt.min && prompt.length <= modelConfig.constraints.prompt.max)
+  const currentModelConfig = availableModels.find(m => m.id === selectedModel) || availableModels[0]
+  const lyricsValid = !currentModelConfig || (lyrics.length >= currentModelConfig.constraints.lyrics.min && lyrics.length <= currentModelConfig.constraints.lyrics.max)
+  const promptValid = !currentModelConfig || (prompt.length >= currentModelConfig.constraints.prompt.min && prompt.length <= currentModelConfig.constraints.prompt.max)
   const canGenerate = lyrics.trim() && lyricsValid && promptValid
-  const songCost = modelConfig?.cost ?? 10
+  const songCost = currentModelConfig?.cost ?? 10
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 transition-colors">
@@ -342,6 +352,31 @@ function Studio() {
                     </button>
                   ))}
                 </div>
+
+                {/* Model Selector */}
+                {availableModels.length > 0 && (
+                  <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4">
+                    <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+                      AI Model
+                    </label>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => setSelectedModel(e.target.value)}
+                      className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    >
+                      {availableModels.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.id === 'minimax/music-1.5' ? 'Music 1.5' : 'Music 2.5'} - {model.cost} credits
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-500">
+                      {selectedModel === 'minimax/music-1.5' 
+                        ? 'Standard quality, shorter lyrics (10-600 chars)'
+                        : 'Higher quality, longer lyrics (1-3,500 chars), longer prompts (up to 2,000 chars)'}
+                    </p>
+                  </div>
+                )}
 
                 <div className="flex flex-col gap-4 pt-2">
                   {!creditsLoaded ? (
@@ -510,14 +545,14 @@ function Studio() {
                     disabled={isGenerating}
                     className="w-full h-64 px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
                   />
-                  {modelConfig && (
+                  {currentModelConfig && (
                     <div className="flex justify-between mt-2">
                       <p className={`text-sm ${lyricsValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
-                        {lyrics.length} / {modelConfig.constraints.lyrics.max} characters
+                        {lyrics.length} / {currentModelConfig.constraints.lyrics.max} characters
                       </p>
-                      {lyrics.length < modelConfig.constraints.lyrics.min && (
+                      {lyrics.length < currentModelConfig.constraints.lyrics.min && (
                         <p className="text-sm text-red-500">
-                          Minimum {modelConfig.constraints.lyrics.min} characters required
+                          Minimum {currentModelConfig.constraints.lyrics.min} characters required
                         </p>
                       )}
                     </div>
@@ -551,14 +586,14 @@ function Studio() {
                     disabled={isGenerating}
                     className="w-full h-28 px-3 py-2 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent resize-none disabled:opacity-50 transition-all"
                   />
-                  {modelConfig && (
+                  {currentModelConfig && (
                     <div className="flex justify-between mt-2">
                       <p className={`text-sm ${promptValid ? 'text-zinc-500 dark:text-zinc-500' : 'text-red-500'}`}>
-                        {prompt.length} / {modelConfig.constraints.prompt.max} characters
+                        {prompt.length} / {currentModelConfig.constraints.prompt.max} characters
                       </p>
-                      {prompt.length < modelConfig.constraints.prompt.min && (
+                      {prompt.length < currentModelConfig.constraints.prompt.min && (
                         <p className="text-sm text-red-500">
-                          Minimum {modelConfig.constraints.prompt.min} characters required
+                          Minimum {currentModelConfig.constraints.prompt.min} characters required
                         </p>
                       )}
                     </div>

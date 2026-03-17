@@ -108,6 +108,26 @@ try {
   // Column already exists, ignore error
 }
 
+// Add model column to track which AI model was used for generation
+try {
+  db.exec(`ALTER TABLE generations ADD COLUMN model TEXT DEFAULT 'minimax/music-1.5'`)
+  console.log('✅ Migration: Added model column to generations table')
+} catch (err) {
+  // Column already exists, ignore error
+}
+
+// Backfill model for existing generations that don't have it set
+try {
+  const result = db.exec(`
+    UPDATE generations 
+    SET model = 'minimax/music-1.5' 
+    WHERE model IS NULL OR model = ''
+  `)
+  console.log('✅ Migration: Backfilled model for existing generations')
+} catch (err) {
+  // Ignore errors - column might not exist yet
+}
+
 // Create index on email for faster lookups
 try {
   db.exec(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`)

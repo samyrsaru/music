@@ -44,12 +44,26 @@ function cleanLlmOutput(output: any): string {
   text = text.trim()
   text = text.replace(/^(assistant|system|user)\s*[:\-]?\s*/gi, '')
   text = text.replace(/^(here are|here is|sure,? here are|sure,? here is)[\s\w]*?:?\s*/i, '')
-  text = text.replace(/^["']|["']$/g, '').trim()
+  text = text.replace(/^("|')|("|')$/g, '').trim()
   text = text.replace(/^(the style is|style:|here is|here are)[\s\w]*?:?\s*/i, '')
+  text = text.replace(/^(title[:\-]?\s*)/i, '')
   text = text.replace(/^\[?INST\]?\s*/i, '')
   text = text.replace(/\s*\[\/INST\]\s*$/i, '')
+  text = text.replace(/\n/g, ' ').trim()
   
   return text
+}
+
+// Helper function to check if a title looks valid
+function isValidTitle(title: string): boolean {
+  if (!title || title.length < 2) return false
+  if (title.length > 100) return false
+  // Check if it contains section markers (shouldn't be in a title)
+  if (/\[(Verse|Chorus|Bridge)\]/i.test(title)) return false
+  // Check if it's just common words
+  const lowercase = title.toLowerCase().trim()
+  if (['the', 'a', 'an', 'song', 'track', 'title', 'music'].includes(lowercase)) return false
+  return true
 }
 
 // Helper function to validate lyrics format
@@ -480,32 +494,53 @@ Style:`
     // Generate song name based on lyrics
     console.log(`🎵 [NAME] Generating name from lyrics...`)
     
-    const namePrompt = `Generate a catchy song title (2-6 words) based on these lyrics.
+    let generatedName = ''
+    let nameAttempts = 0
+    const maxNameAttempts = 2
+    
+    while (nameAttempts < maxNameAttempts) {
+      nameAttempts++
+      console.log(`🎵 [NAME] Attempt ${nameAttempts}/${maxNameAttempts}`)
+      
+      const namePrompt = `Create a catchy song title (2-6 words) based on these lyrics.
 
 Lyrics:
 ${generatedLyrics.substring(0, 500)}
 
-Title:`
+Respond with only the title, nothing else.`
 
-    const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
-      input: {
-        prompt: namePrompt,
-        max_tokens: 30,
-        temperature: 0.8,
-        system_prompt: "You are a songwriting assistant. You create catchy song titles. Never use quotes or introductions. Just output the title directly."
+      const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+        input: {
+          prompt: namePrompt,
+          max_tokens: 30,
+          temperature: 0.8,
+          system_prompt: "You are a songwriting assistant. Create catchy song titles. Output only the title text, no quotes, no explanations, no labels."
+        }
+      }) as any
+
+      generatedName = cleanLlmOutput(nameOutput)
+      
+      // Limit length
+      if (generatedName.length > 60) {
+        generatedName = generatedName.substring(0, 60)
       }
-    }) as any
-
-    let generatedName = cleanLlmOutput(nameOutput)
-    
-    // Fallback if name is too short or empty
-    if (generatedName.length < 2) {
-      generatedName = topic.split(' ').slice(0, 4).join(' ')
+      
+      // Check if valid
+      if (isValidTitle(generatedName)) {
+        console.log(`✅ [NAME] Valid title on attempt ${nameAttempts}: "${generatedName}"`)
+        break
+      } else {
+        console.log(`⚠️ [NAME] Invalid title on attempt ${nameAttempts}: "${generatedName}"`)
+        if (nameAttempts >= maxNameAttempts) {
+          console.log(`⚠️ [NAME] Falling back to topic-based title`)
+        }
+      }
     }
     
-    // Limit length
-    if (generatedName.length > 60) {
-      generatedName = generatedName.substring(0, 60)
+    // Fallback if still invalid after retries
+    if (!isValidTitle(generatedName)) {
+      generatedName = topic.split(' ').slice(0, 4).join(' ')
+      console.log(`✅ [NAME] Fallback title: "${generatedName}"`)
     }
 
     console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)

@@ -582,7 +582,7 @@ Begin:`
       lyricsAttempts++
       console.log(`🎤 [LYRICS] Attempt ${lyricsAttempts}/${maxLyricsAttempts}`)
       
-      const lyricsOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+      const lyricsOutput = await replicate.run("openai/gpt-5-nano", {
         input: {
           prompt: lyricsPrompt,
           max_tokens: 800,

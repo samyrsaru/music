@@ -123,12 +123,15 @@ function validateLyrics(lyrics: string, modelId: string = DEFAULT_MODEL): boolea
     return hasSection && length >= model.constraints.lyrics.min && length <= model.constraints.lyrics.max
   }
   
-  // Must have at least one verse and one chorus
+  // For basic models, strongly prefer Verse AND Chorus structure
   const hasVerse = /\[Verse\]/i.test(lyrics)
   const hasChorus = /\[Chorus\]/i.test(lyrics)
   const length = lyrics.length
   
-  return hasVerse && hasChorus && length >= model.constraints.lyrics.min && length <= model.constraints.lyrics.max
+  // Require Chorus for better structure (prompt asks for Verse-Chorus-Verse-Chorus)
+  const hasBasicStructure = hasChorus || (hasVerse && length < 300)
+  
+  return hasBasicStructure && length >= model.constraints.lyrics.min && length <= model.constraints.lyrics.max
 }
 
 // Get available models configuration
@@ -521,7 +524,7 @@ app.post('/lyrics', async (c) => {
     
     const sectionTags = isAdvancedModel 
       ? `[Intro], [Verse], [Pre Chorus], [Chorus], [Post Chorus], [Hook], [Drop], [Bridge], [Solo], [Inst], [Build Up], [Interlude], [Break], [Transition], [Outro]`
-      : `[Verse], [Chorus], [Bridge]`
+      : `[Intro], [Verse], [Chorus], [Bridge], [Outro]`
     
     const sectionInstructions = isAdvancedModel
       ? `Use section tags to control song structure: ${sectionTags}
@@ -533,7 +536,28 @@ app.post('/lyrics', async (c) => {
 - Use parenthetical directions for vocal delivery: (whispered), (belted), (softly), (powerful)
 - Use parenthetical directions for backing vocals: (hear it echo), (background harmonies)
 - Use parenthetical directions for instrumental cues: (guitar solo), (strings building), (beat drops)`
-      : `Format: [Verse], [Chorus], [Verse], [Chorus] sections minimum. Add [Bridge] and final [Chorus] if space allows. Never use numbered sections like [Verse 1] or [Verse 2].`
+      : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
+- Format example:
+[Intro]
+Line one here
+Line two here
+
+[Verse]
+First line here
+Second line here
+Third line here
+
+[Chorus]
+First chorus line
+Second chorus line
+Third chorus line
+
+[Bridge]
+Bridge lines here
+
+[Outro]
+Line one here
+Line two here`
     
     const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
 
@@ -580,7 +604,7 @@ Begin:`
         const truncated = generatedLyrics.substring(0, maxLength)
         const sectionMarkers = isAdvancedModel
           ? ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]', '[Hook]', '[Drop]', '[Pre Chorus]', '[Post Chorus]', '[Build Up]', '[Interlude]', '[Break]', '[Transition]', '[Solo]', '[Inst]']
-          : ['[Verse]', '[Chorus]', '[Bridge]']
+          : ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]']
         
         let lastSection = 0
         for (const marker of sectionMarkers) {
@@ -608,22 +632,26 @@ Begin:`
         console.log(`⚠️ [LYRICS] Invalid format on attempt ${lyricsAttempts}: missing required sections or wrong length`)
         if (lyricsAttempts >= maxLyricsAttempts) {
           // Check if any section tags exist (for advanced models, any tag is acceptable)
-          const hasAnySection = /\[(Verse|Chorus|Intro|Outro|Bridge|Hook|Drop|Pre Chorus|Post Chorus|Build Up|Interlude|Break|Transition|Solo|Inst)\]/i.test(generatedLyrics)
+          const hasAnySection = isAdvancedModel
+            ? /\[(Verse|Chorus|Intro|Outro|Bridge|Hook|Drop|Pre Chorus|Post Chorus|Build Up|Interlude|Break|Transition|Solo|Inst)\]/i.test(generatedLyrics)
+            : /\[(Intro|Verse|Chorus|Bridge|Outro)\]/i.test(generatedLyrics)
           
           if (!hasAnySection) {
             // Force format by wrapping in verse if no sections at all
             generatedLyrics = `[Verse]\n${generatedLyrics}`
           }
           
-          // For basic models, ensure chorus exists if lyrics are long enough
-          if (!isAdvancedModel && !generatedLyrics.includes('[Chorus]') && generatedLyrics.length > 200) {
-            // Insert chorus in the middle
-            const midPoint = Math.floor(generatedLyrics.length / 2)
-            generatedLyrics = generatedLyrics.slice(0, midPoint) + '\n\n[Chorus]\n' + generatedLyrics.slice(midPoint)
+          // Ensure we don't exceed max length after adding section tags
+          if (generatedLyrics.length > maxLength) {
+            generatedLyrics = generatedLyrics.substring(0, maxLength).trim()
+            console.log(`✂️ [LYRICS] Hard truncated to ${maxLength} chars after adding section tags`)
           }
         }
       }
     }
+
+    // Log the final generated lyrics
+    console.log(`🎤 [LYRICS] Final lyrics (${generatedLyrics.length} chars):\n---\n${generatedLyrics}\n---`)
 
     // Generate matching style based on the topic and mood
     console.log(`🎨 [STYLE] Generating style for: "${topic}"`)

@@ -26,6 +26,42 @@ const MODEL_CONFIG = {
   }
 }
 
+// Helper function to clean LLM output
+function cleanLlmOutput(output: any): string {
+  let text: string
+  
+  if (typeof output === 'string') {
+    text = output
+  } else if (Array.isArray(output) && output.length > 0) {
+    text = output.join('')
+  } else if (output && typeof output === 'object') {
+    text = output.output || output.text || JSON.stringify(output)
+  } else {
+    text = String(output)
+  }
+  
+  // Remove common prefixes and artifacts
+  text = text.trim()
+  text = text.replace(/^(assistant|system|user)\s*[:\-]?\s*/gi, '')
+  text = text.replace(/^(here are|here is|sure,? here are|sure,? here is)[\s\w]*?:?\s*/i, '')
+  text = text.replace(/^["']|["']$/g, '').trim()
+  text = text.replace(/^(the style is|style:|here is|here are)[\s\w]*?:?\s*/i, '')
+  text = text.replace(/^\[?INST\]?\s*/i, '')
+  text = text.replace(/\s*\[\/INST\]\s*$/i, '')
+  
+  return text
+}
+
+// Helper function to validate lyrics format
+function validateLyrics(lyrics: string): boolean {
+  // Must have at least one verse and one chorus
+  const hasVerse = /\[Verse\]/i.test(lyrics)
+  const hasChorus = /\[Chorus\]/i.test(lyrics)
+  const length = lyrics.length
+  
+  return hasVerse && hasChorus && length >= MODEL_CONFIG.constraints.lyrics.min && length <= MODEL_CONFIG.constraints.lyrics.max
+}
+
 // Get model configuration
 app.get('/config', (c) => {
   return c.json(MODEL_CONFIG)
@@ -92,74 +128,28 @@ app.post('/generate', async (c) => {
       .run(lifetimeDeduction, auth.userId)
   }
 
+  const { name } = await c.req.json()
+  
   const generationId = crypto.randomUUID()
   
   console.log(`🎵 [START] Generation started for user: ${auth.userId.substring(0, 8)}...`)
   console.log(`   Generation ID: ${generationId}`)
   console.log(`   Lyrics: ${lyrics.substring(0, 50)}...`)
   console.log(`   Prompt: ${prompt || 'pop music'}`)
+  console.log(`   Name: ${name || '(not provided)'}`)
 
-  // Generate song name based on lyrics
-  console.log(`🎵 [NAME] Generating name from lyrics...`)
+  // Use provided name or fallback to truncated prompt
+  const generatedName = name?.trim() || prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
+  const finalName = generatedName.length > 60 ? generatedName.substring(0, 60) : generatedName
   
-  let generatedName: string
-  
-  try {
-    const namePrompt = `[INST] Based on these song lyrics, generate a short, catchy song title (2-6 words).
-The title should capture the essence of the song. Be creative but concise.
-Examples: "Summer Nights", "Lost in You", "Electric Dreams", "Rainy Day Blues"
-
-Lyrics:
-${lyrics.substring(0, 500)}
-
-STRICT: Return ONLY the title text. NO quotes. NO explanations. Just the title. [/INST]`
-
-    const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
-      input: {
-        prompt: namePrompt,
-        max_tokens: 50,
-        temperature: 0.8,
-        system_prompt: "You are a songwriting assistant. You create catchy song titles. Never use quotes or introductions. Just output the title directly."
-      }
-    }) as any
-    
-    if (typeof nameOutput === 'string') {
-      generatedName = nameOutput
-    } else if (Array.isArray(nameOutput) && nameOutput.length > 0) {
-      generatedName = nameOutput.join('')
-    } else if (nameOutput && typeof nameOutput === 'object') {
-      generatedName = nameOutput.output || nameOutput.text || String(nameOutput)
-    } else {
-      generatedName = String(nameOutput)
-    }
-
-    // Clean up the name
-    generatedName = generatedName.trim()
-    generatedName = generatedName.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
-    generatedName = generatedName.replace(/^["']+|["']+$/g, '').trim()
-    
-    // Fallback if name is too short or empty
-    if (generatedName.length < 2) {
-      generatedName = prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
-    }
-    
-    // Limit length
-    if (generatedName.length > 60) {
-      generatedName = generatedName.substring(0, 60)
-    }
-    
-    console.log(`✅ [NAME] Generated: "${generatedName}"`)
-  } catch (nameError: any) {
-    console.error(`❌ [NAME] Generation failed:`, nameError.message)
-    generatedName = prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
-  }
+  console.log(`✅ [NAME] Using: "${finalName}"`)
 
   try {
     // Create pending generation record
     db.prepare(`
       INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, originalIdea, status, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName, originalIdea || null)
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', finalName, originalIdea || null)
 
     // Start async generation with webhook
     const input = {
@@ -399,88 +389,83 @@ app.post('/lyrics', async (c) => {
     console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" ${mood ? `(${mood})` : ''}`)
     
     // Generate lyrics
-    const lyricsPrompt = `[INST] Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}. 
-Format with [Verse], [Chorus], [Bridge] sections. 
-Keep it between ${MODEL_CONFIG.constraints.lyrics.min} and ${MODEL_CONFIG.constraints.lyrics.max} characters.
-Make it creative and rhyming.
+    const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
 
-STRICT REQUIREMENTS:
-- Return ONLY the lyrics text
-- NO introductory phrases like "Here are lyrics" or "Sure, here is"
-- NO explanations or notes
-- Start directly with the content: either "[Verse]" or the first line of lyrics
-- Do not include the word "assistant" or any role indicators [/INST]`
+Requirements:
+- Format: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] sections
+- Length: ${MODEL_CONFIG.constraints.lyrics.min}-${MODEL_CONFIG.constraints.lyrics.max} characters
+- Rhyme scheme: AABB or ABAB
+- Start immediately with [Verse], no introductions
 
-    const lyricsOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
-      input: {
-        prompt: lyricsPrompt,
-        max_tokens: 800,
-        temperature: 0.8,
-        system_prompt: "You are a songwriting assistant. You write only song lyrics, nothing else. Never include introductions, explanations, or metadata. Just output the lyrics directly."
+Begin:`
+
+    let generatedLyrics: string = ''
+    let lyricsAttempts = 0
+    const maxLyricsAttempts = 2
+    
+    while (lyricsAttempts < maxLyricsAttempts) {
+      lyricsAttempts++
+      console.log(`🎤 [LYRICS] Attempt ${lyricsAttempts}/${maxLyricsAttempts}`)
+      
+      const lyricsOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+        input: {
+          prompt: lyricsPrompt,
+          max_tokens: 800,
+          temperature: 0.7,
+          system_prompt: "You are a songwriting assistant. You write only song lyrics, nothing else. Never include introductions, explanations, or metadata. Just output the lyrics directly."
+        }
+      }) as any
+      
+      generatedLyrics = cleanLlmOutput(lyricsOutput)
+      
+      // Ensure it fits constraints
+      if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
+        generatedLyrics = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
       }
-    }) as any
-
-    let generatedLyrics: string
-    
-    if (typeof lyricsOutput === 'string') {
-      generatedLyrics = lyricsOutput
-    } else if (Array.isArray(lyricsOutput) && lyricsOutput.length > 0) {
-      generatedLyrics = lyricsOutput.join('')
-    } else if (lyricsOutput && typeof lyricsOutput === 'object') {
-      generatedLyrics = lyricsOutput.output || lyricsOutput.text || JSON.stringify(lyricsOutput)
-    } else {
-      generatedLyrics = String(lyricsOutput)
-    }
-
-    // Clean up the response - remove common prefixes
-    generatedLyrics = generatedLyrics.trim()
-    generatedLyrics = generatedLyrics.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
-    generatedLyrics = generatedLyrics.replace(/^(here are|here is|sure,? here are|sure,? here is)[\s\w]*?:?\s*/i, '')
-    generatedLyrics = generatedLyrics.replace(/^["']|["']$/g, '').trim()
-    
-    // Ensure it fits constraints
-    if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
-      generatedLyrics = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
+      
+      // Validate format
+      if (validateLyrics(generatedLyrics)) {
+        console.log(`✅ [LYRICS] Valid format on attempt ${lyricsAttempts}`)
+        break
+      } else {
+        console.log(`⚠️ [LYRICS] Invalid format on attempt ${lyricsAttempts}: missing Verse/Chorus or wrong length`)
+        if (lyricsAttempts >= maxLyricsAttempts) {
+          // Force format by wrapping in verse/chorus if missing
+          if (!generatedLyrics.includes('[Verse]')) {
+            generatedLyrics = `[Verse]\n${generatedLyrics}`
+          }
+          if (!generatedLyrics.includes('[Chorus]') && generatedLyrics.length > 200) {
+            // Insert chorus in the middle
+            const midPoint = Math.floor(generatedLyrics.length / 2)
+            generatedLyrics = generatedLyrics.slice(0, midPoint) + '\n\n[Chorus]\n' + generatedLyrics.slice(midPoint)
+          }
+        }
+      }
     }
 
     // Generate matching style based on the topic and mood
     console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
     
-    const stylePrompt = `[INST] Based on this song idea: "${topic}"${mood ? ` with a ${mood} mood` : ''}, 
-generate a short music style description (10-100 characters) that would match the lyrics.
-Include genre, mood, and any specific instruments or vibes. Be specific but concise.
-Example: Jazz, romantic, smooth saxophone, dreamy atmosphere
-Example: Upbeat pop, energetic, electronic synths, danceable
-Example: Acoustic folk, melancholic, gentle guitar, rainy day vibes
+    const stylePrompt = `Describe the music style for a song about "${topic}"${mood ? ` with ${mood} mood` : ''}.
 
-STRICT: Return ONLY the style description text. NO quotes. NO introductions. Just the description. [/INST]`
+Format: Genre, mood, key instruments/vibe (10-100 characters)
+Examples:
+- "Upbeat indie pop, energetic, synth guitars, summer vibes"
+- "Melancholic acoustic folk, gentle guitar, rainy atmosphere"
+- "Electronic dance, high energy, pulsing beats, club ready"
+
+Style:`
 
     const styleOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
       input: {
         prompt: stylePrompt,
         max_tokens: 100,
-        temperature: 0.7,
+        temperature: 0.6,
         system_prompt: "You are a music style expert. You describe music styles in a short, specific format. Never use quotes or introductions. Just output the style description directly."
       }
     }) as any
 
-    let generatedStyle: string
-    
-    if (typeof styleOutput === 'string') {
-      generatedStyle = styleOutput
-    } else if (Array.isArray(styleOutput) && styleOutput.length > 0) {
-      generatedStyle = styleOutput.join('')
-    } else if (styleOutput && typeof styleOutput === 'object') {
-      generatedStyle = styleOutput.output || styleOutput.text || String(styleOutput)
-    } else {
-      generatedStyle = String(styleOutput)
-    }
-
-    // Clean up the style - remove quotes, prefixes, etc.
-    generatedStyle = generatedStyle.trim()
-    generatedStyle = generatedStyle.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
-    generatedStyle = generatedStyle.replace(/^(the style is|style:|here is|here are)[\s\w]*?:?\s*/i, '')
-    generatedStyle = generatedStyle.replace(/^["']+|["']+$/g, '').trim()
+    let generatedStyle = cleanLlmOutput(styleOutput)
     
     // Ensure style fits constraints
     if (generatedStyle.length > MODEL_CONFIG.constraints.prompt.max) {
@@ -495,40 +480,23 @@ STRICT: Return ONLY the style description text. NO quotes. NO introductions. Jus
     // Generate song name based on lyrics
     console.log(`🎵 [NAME] Generating name from lyrics...`)
     
-    const namePrompt = `[INST] Based on these song lyrics, generate a short, catchy song title (2-6 words).
-The title should capture the essence of the song. Be creative but concise.
-Examples: "Summer Nights", "Lost in You", "Electric Dreams", "Rainy Day Blues"
+    const namePrompt = `Generate a catchy song title (2-6 words) based on these lyrics.
 
 Lyrics:
 ${generatedLyrics.substring(0, 500)}
 
-STRICT: Return ONLY the title text. NO quotes. NO explanations. Just the title. [/INST]`
+Title:`
 
     const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
       input: {
         prompt: namePrompt,
-        max_tokens: 50,
+        max_tokens: 30,
         temperature: 0.8,
         system_prompt: "You are a songwriting assistant. You create catchy song titles. Never use quotes or introductions. Just output the title directly."
       }
     }) as any
 
-    let generatedName: string
-    
-    if (typeof nameOutput === 'string') {
-      generatedName = nameOutput
-    } else if (Array.isArray(nameOutput) && nameOutput.length > 0) {
-      generatedName = nameOutput.join('')
-    } else if (nameOutput && typeof nameOutput === 'object') {
-      generatedName = nameOutput.output || nameOutput.text || String(nameOutput)
-    } else {
-      generatedName = String(nameOutput)
-    }
-
-    // Clean up the name
-    generatedName = generatedName.trim()
-    generatedName = generatedName.replace(/^(assistant|system|user)\s*[:\-]?\s*/i, '')
-    generatedName = generatedName.replace(/^["']+|["']+$/g, '').trim()
+    let generatedName = cleanLlmOutput(nameOutput)
     
     // Fallback if name is too short or empty
     if (generatedName.length < 2) {

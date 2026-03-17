@@ -55,8 +55,9 @@ function Studio() {
   const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false)
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
-  const [credits, setCredits] = useState(0)
+  const [credits, setCredits] = useState<number | null>(null)
   const [lifetimeCredits, setLifetimeCredits] = useState(0)
+  const [creditsLoaded, setCreditsLoaded] = useState(false)
   const [modelConfig, setModelConfig] = useState<ModelConfig | null>(null)
   const [generationId, setGenerationId] = useState<string | null>(null)
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'pending' | 'completed' | 'failed'>('idle')
@@ -103,8 +104,10 @@ function Studio() {
       const data = await res.json()
       setCredits(data.credits)
       setLifetimeCredits(data.lifetimeCredits || 0)
+      setCreditsLoaded(true)
     } catch (err) {
       console.error('Failed to fetch status:', err)
+      setCreditsLoaded(true)
     }
   }
 
@@ -341,7 +344,17 @@ function Studio() {
                 </div>
 
                 <div className="flex flex-col gap-4 pt-2">
-                  {credits + lifetimeCredits < songCost ? (
+                  {!creditsLoaded ? (
+                    <button
+                      disabled
+                      className="w-full py-4 bg-zinc-300 dark:bg-zinc-700 text-white font-semibold text-lg rounded-xl shadow-none cursor-not-allowed"
+                    >
+                      <span className="flex items-center justify-center gap-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                        Loading...
+                      </span>
+                    </button>
+                  ) : (credits ?? 0) + lifetimeCredits < songCost ? (
                     <button
                       onClick={startCheckout}
                       disabled={startingCheckout}
@@ -373,7 +386,7 @@ function Studio() {
                     </button>
                   )}
 
-                  {credits + lifetimeCredits >= songCost && (
+                  {creditsLoaded && (credits ?? 0) + lifetimeCredits >= songCost && (
                     <>
                       <div className="flex items-center justify-center gap-3">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -565,7 +578,17 @@ function Studio() {
 
               {/* Generate Button */}
               <div className="flex flex-col items-center gap-4">
-                {credits + lifetimeCredits < songCost ? (
+                {!creditsLoaded ? (
+                  <button
+                    disabled
+                    className="w-full max-w-md py-4 bg-zinc-300 dark:bg-zinc-700 text-white font-semibold text-lg rounded-xl shadow-none cursor-not-allowed"
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                      Loading...
+                    </span>
+                  </button>
+                ) : (credits ?? 0) + lifetimeCredits < songCost ? (
                   <button
                     onClick={startCheckout}
                     disabled={startingCheckout}
@@ -597,14 +620,14 @@ function Studio() {
                   </button>
                 )}
 
-                {credits + lifetimeCredits >= songCost && (
+                {creditsLoaded && (credits ?? 0) + lifetimeCredits >= songCost && (
                   <p className="text-sm text-zinc-500 dark:text-zinc-400">
                     Each song costs {songCost} credits
                   </p>
                 )}
 
                 <p className="text-xs text-zinc-400 dark:text-zinc-600">
-                  {credits + lifetimeCredits} credits remaining
+                  {(credits ?? 0) + lifetimeCredits} credits remaining
                   {lifetimeCredits > 0 && ` (${lifetimeCredits} lifetime)`}
                 </p>
               </div>

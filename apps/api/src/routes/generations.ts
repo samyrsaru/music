@@ -533,9 +533,10 @@ app.post('/lyrics', async (c) => {
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
 - Use [Inst], [Solo], [Interlude] for instrumental sections
 - Use [Break], [Transition] for dynamic changes
-- Use parenthetical directions for vocal delivery: (whispered), (belted), (softly), (powerful)
-- Use parenthetical directions for backing vocals: (hear it echo), (background harmonies)
-- Use parenthetical directions for instrumental cues: (guitar solo), (strings building), (beat drops)`
+- For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
+- DO include parenthetical backing vocals and ad-libs on their own line
+- DO include parenthetical instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
+- NEVER put cues inline with lyrics - each cue must be on its own separate line`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
 [Intro]
@@ -567,7 +568,7 @@ ${sectionInstructions}
 - Maximum: ${maxLength} characters - do not exceed this
 - Prefer 2-4 substantial sections over many short ones
 - Each section: 6-10 lines with meaningful content
-- Rhyme scheme: AABB or ABAB
+- Rhyme scheme: AABB or ABAB (do NOT write the letters like (A) or (B) in the lyrics)
 - Start immediately with [Verse] or [Intro], no explanations
 
 Write substantial, complete lyrics. Make each section full and meaningful. Stay within the ${maxLength} character limit.
@@ -597,6 +598,14 @@ Begin:`
       generatedLyrics = generatedLyrics.replace(/\[Verse\s+\d+\]/gi, '[Verse]')
       generatedLyrics = generatedLyrics.replace(/\[Chorus\s+\d+\]/gi, '[Chorus]')
       generatedLyrics = generatedLyrics.replace(/\[Bridge\s+\d+\]/gi, '[Bridge]')
+      
+      // Remove trailing rhyme scheme annotations like (A), (B), (C), etc. at end of lines
+      generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/gm, '')
+      generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*(?=\n)/g, '')
+      generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/g, '')
+      
+      // Remove parenthetical vocal delivery directions only - keep backing vocals and instrumental cues
+      generatedLyrics = generatedLyrics.replace(/\s*\((softly|whispered|belted|powerful)\)\s*/gi, '')
       
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {

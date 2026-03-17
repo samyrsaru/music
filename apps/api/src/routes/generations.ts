@@ -27,7 +27,7 @@ const MODEL_CONFIG = {
 }
 
 // Helper function to clean LLM output
-function cleanLlmOutput(output: any): string {
+function cleanLlmOutput(output: any, preserveNewlines: boolean = false): string {
   let text: string
   
   if (typeof output === 'string') {
@@ -49,7 +49,11 @@ function cleanLlmOutput(output: any): string {
   text = text.replace(/^(title[:\-]?\s*)/i, '')
   text = text.replace(/^\[?INST\]?\s*/i, '')
   text = text.replace(/\s*\[\/INST\]\s*$/i, '')
-  text = text.replace(/\n/g, ' ').trim()
+  
+  // Only remove newlines for titles/single-line outputs
+  if (!preserveNewlines) {
+    text = text.replace(/\n/g, ' ').trim()
+  }
   
   return text
 }
@@ -430,7 +434,7 @@ Begin:`
         }
       }) as any
       
-      generatedLyrics = cleanLlmOutput(lyricsOutput)
+      generatedLyrics = cleanLlmOutput(lyricsOutput, true)
       
       // Ensure it fits constraints
       if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {

@@ -93,11 +93,31 @@ function Song() {
 
   const copyToClipboard = async (text: string, field: string) => {
     try {
-      await navigator.clipboard.writeText(text)
+      // Try modern Clipboard API first
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text)
+      } else {
+        // Fallback for older browsers/Android
+        const textArea = document.createElement('textarea')
+        textArea.value = text
+        textArea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;'
+        document.body.appendChild(textArea)
+        textArea.focus()
+        textArea.select()
+        
+        const successful = document.execCommand('copy')
+        document.body.removeChild(textArea)
+        
+        if (!successful) {
+          throw new Error('execCommand copy failed')
+        }
+      }
+      
       setCopiedField(field)
       setTimeout(() => setCopiedField(null), 2000)
     } catch (err) {
       console.error('Failed to copy:', err)
+      // Could add toast notification here for user feedback
     }
   }
 

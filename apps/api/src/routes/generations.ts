@@ -410,16 +410,15 @@ app.post('/lyrics', async (c) => {
     const lyricsPrompt = `Write song lyrics about: ${topic}${mood ? ` with a ${mood} mood` : ''}.
 
 Requirements:
-- Format: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] sections
-- Target length: 500-600 characters (write full, complete sections)
+- Format: [Verse], [Chorus], [Verse], [Chorus] sections minimum. Add [Bridge] and final [Chorus] if space allows
+- Target length: 500-600 characters
 - Maximum: 600 characters - do not exceed this
-- Each verse: 4-8 lines
-- Each chorus: 4-6 lines (repeated)
-- Bridge: 4-6 lines
+- Prefer 2-3 substantial sections over many short ones
+- Each section: 6-10 lines with meaningful content
 - Rhyme scheme: AABB or ABAB
 - Start immediately with [Verse], no introductions
 
-Write substantial, complete lyrics. Do not be brief. Stay within the 600 character limit.
+Write substantial, complete lyrics. Make each section full and meaningful. Stay within the 600 character limit.
 
 Begin:`
 

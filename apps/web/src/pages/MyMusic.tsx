@@ -12,6 +12,7 @@ interface Generation {
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
   favorite: number
+  model?: string
   createdAt: string
 }
 
@@ -235,9 +236,16 @@ function MyMusic() {
                     <Link to={`/song/${gen.id}`} className="block p-6 space-y-4">
                         <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-1">
-                            {formatDate(gen.createdAt)}
-                          </p>
+                          <div className="flex items-center gap-2 mb-1">
+                            <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">
+                              {formatDate(gen.createdAt)}
+                            </p>
+                            {gen.model === 'minimax/music-2.5' && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                                Pro
+                              </span>
+                            )}
+                          </div>
                           <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt}>
                             {gen.name || gen.prompt}
                           </h3>

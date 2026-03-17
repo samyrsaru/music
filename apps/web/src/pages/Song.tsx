@@ -12,6 +12,7 @@ interface Generation {
   audioUrl: string
   status: 'pending' | 'completed' | 'failed'
   favorite: number
+  model: string
   createdAt: string
   originalIdea?: string
 }
@@ -323,9 +324,20 @@ function Song() {
                     </div>
                   </div>
                 )}
-                <p className="text-zinc-500 dark:text-zinc-500">
-                  Created on {formatDate(generation.createdAt)}
-                </p>
+                <div className="flex items-center gap-3">
+                  <p className="text-zinc-500 dark:text-zinc-500">
+                    Created on {formatDate(generation.createdAt)}
+                  </p>
+                  {generation.model === 'minimax/music-2.5' ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300">
+                      Pro
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400">
+                      Standard
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Audio Player or Pending State */}

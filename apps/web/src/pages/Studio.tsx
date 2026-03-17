@@ -36,6 +36,7 @@ const blobStyles = `
 
 interface ModelConfig {
   id: string
+  nickname: string
   cost: number
   constraints: {
     lyrics: { min: number; max: number }
@@ -366,7 +367,7 @@ function Studio() {
                     >
                       {availableModels.map((model) => (
                         <option key={model.id} value={model.id}>
-                          {model.id === 'minimax/music-1.5' ? 'Music 1.5' : 'Music 2.5'} - {model.cost} credits
+                          {model.id === 'minimax/music-1.5' ? 'Standard' : 'Pro'} - {model.cost} credits
                         </option>
                       ))}
                     </select>

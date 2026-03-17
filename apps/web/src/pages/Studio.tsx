@@ -657,28 +657,40 @@ function Studio() {
                       </summary>
                       <div className="mt-4 space-y-4 text-sm">
                         <div>
-                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Section Tags</p>
-                          <div className="grid grid-cols-2 gap-2 text-xs">
-                            <div className="space-y-1">
+                          <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">
+                            Section Tags {selectedModel === 'minimax/music-2.5' ? '(Pro - 14 tags)' : '(Standard - 5 tags)'}
+                          </p>
+                          {selectedModel === 'minimax/music-2.5' ? (
+                            <div className="grid grid-cols-2 gap-2 text-xs">
+                              <div className="space-y-1">
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Intro]</code> Song opening</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Verse]</code> Story / narrative</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Pre Chorus]</code> Build-up</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Chorus]</code> Main hook</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Post Chorus]</code> After-hook</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Hook]</code> Catchy phrase</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Drop]</code> Energy release (EDM)</p>
+                              </div>
+                              <div className="space-y-1">
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Bridge]</code> Contrast section</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Solo]</code> Instrument spotlight</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Inst]</code> Instrumental section</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Build Up]</code> Intensity increase</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Interlude]</code> Instrumental break</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Break]</code> Rhythmic pause</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Transition]</code> Section connector</p>
+                                <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Outro]</code> Song ending</p>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-xs space-y-1">
                               <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Intro]</code> Song opening</p>
                               <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Verse]</code> Story / narrative</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Pre Chorus]</code> Build-up</p>
                               <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Chorus]</code> Main hook</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Post Chorus]</code> After-hook</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Hook]</code> Catchy phrase</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Drop]</code> Energy release (EDM)</p>
-                            </div>
-                            <div className="space-y-1">
                               <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Bridge]</code> Contrast section</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Solo]</code> Instrument spotlight</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Inst]</code> Instrumental section</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Build Up]</code> Intensity increase</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Interlude]</code> Instrumental break</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Break]</code> Rhythmic pause</p>
-                              <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Transition]</code> Section connector</p>
                               <p><code className="bg-zinc-200 dark:bg-zinc-800 px-1.5 py-0.5 rounded">[Outro]</code> Song ending</p>
                             </div>
-                          </div>
+                          )}
                         </div>
                         
                         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
@@ -689,12 +701,14 @@ function Studio() {
                               <p className="text-zinc-600 dark:text-zinc-500">Sung phrases and sounds:</p>
                               <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(ooh yeah)</code>, <code className="text-green-600 dark:text-green-400">(whoa-oh-oh)</code>, <code className="text-green-600 dark:text-green-400">(la la la hey)</code>, <code className="text-green-600 dark:text-green-400">(mmm mmm)</code></p>
                             </div>
-                            <div>
-                              <p className="text-zinc-700 dark:text-zinc-300 font-medium">2. Instruments (only in [Solo], [Inst], [Interlude])</p>
-                              <p className="text-zinc-600 dark:text-zinc-500">Describe the instrument and style:</p>
-                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Guitar solo - slow, mournful, bluesy)</code></p>
-                              <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Piano and strings building intensity)</code></p>
-                            </div>
+                            {selectedModel === 'minimax/music-2.5' && (
+                              <div>
+                                <p className="text-zinc-700 dark:text-zinc-300 font-medium">2. Instruments (only in [Solo], [Inst], [Interlude])</p>
+                                <p className="text-zinc-600 dark:text-zinc-500">Describe the instrument and style:</p>
+                                <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Guitar solo - slow, mournful, bluesy)</code></p>
+                                <p className="text-zinc-600 dark:text-zinc-500"><code className="text-green-600 dark:text-green-400">(Piano and strings building intensity)</code></p>
+                              </div>
+                            )}
                           </div>
                         </div>
                         
@@ -711,7 +725,8 @@ function Studio() {
                         <div className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
                           <p className="font-semibold text-zinc-800 dark:text-zinc-200 mb-2">Example Structure</p>
                           <pre className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded text-xs text-zinc-600 dark:text-zinc-400 overflow-x-auto">
-{`[Intro]
+{selectedModel === 'minimax/music-2.5' 
+? `[Intro]
 (Piano - soft, building gently)
 
 [Verse]
@@ -724,7 +739,20 @@ Driving through the night
 (whoa-oh-oh) Feeling so right
 
 [Solo]
-(Guitar solo - slow, mournful, bluesy)`}
+(Guitar solo - slow, mournful, bluesy)`
+: `[Verse]
+My car is cool and dusty
+Every mile tells a story
+(ooh yeah) Singing loud
+
+[Chorus]
+Driving through the night
+(whoa-oh-oh) Under starlight
+(ooh) Feeling so right
+
+[Bridge]
+Chrome catching memories
+Of summer heat`}
                           </pre>
                         </div>
                       </div>

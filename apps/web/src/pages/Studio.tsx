@@ -225,12 +225,12 @@ function Studio() {
           setGenerationId(null)
           fetchStatus() // Refresh credits
         } else {
-          // Still pending, poll again in 3 seconds
-          setTimeout(() => poll(), 3000)
+          // Still pending, poll again in 5 seconds
+          setTimeout(() => poll(), 5000)
         }
       } catch (err) {
         console.error('Failed to poll status:', err)
-        setTimeout(() => poll(), 3000)
+        setTimeout(() => poll(), 5000)
       }
     }
     

@@ -48,7 +48,7 @@ function Song() {
     
     const interval = setInterval(() => {
       fetchGeneration()
-    }, 3000)
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [generation?.status])

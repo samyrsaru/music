@@ -645,6 +645,16 @@ function Studio() {
                     </div>
                   )}
                   
+                  {/* Format Warning */}
+                  <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl">
+                    <div className="flex items-start gap-2">
+                      <span className="text-amber-500 text-lg">⚠️</span>
+                      <p className="text-sm text-amber-800 dark:text-amber-400">
+                        <span className="font-semibold">Important:</span> Complex AI-generated lyrics may not always comply with format rules. Please review and edit to ensure they follow the guidelines below for best results. Songs with incorrect formatting (emotional cues like "(romantic)", scene descriptions, lyrics after instruments, etc.) will have issues.
+                      </p>
+                    </div>
+                  </div>
+                  
                   {/* Lyrics Format Guide */}
                   <div className="mt-4 p-4 bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 rounded-xl">
                     <details className="group">

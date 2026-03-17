@@ -534,9 +534,10 @@ app.post('/lyrics', async (c) => {
 - Use [Inst], [Solo], [Interlude] for instrumental sections
 - Use [Break], [Transition] for dynamic changes
 - For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
-- DO include parenthetical backing vocals and ad-libs on their own line
-- DO include parenthetical instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
-- NEVER put cues inline with lyrics - each cue must be on its own separate line`
+- DO include backing vocals and ad-libs on their own line with the content in parentheses: (La la la), (Oh, stay), (Can you feel it)
+- DO include instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
+- NEVER put cues inline with lyrics - each cue must be on its own separate line
+- NEVER write "(Backing vocals)" or "(Ad-libs)" as labels - put the actual vocal content directly in parentheses`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
 [Intro]
@@ -606,6 +607,10 @@ Begin:`
       
       // Remove parenthetical vocal delivery directions only - keep backing vocals and instrumental cues
       generatedLyrics = generatedLyrics.replace(/\s*\((softly|whispered|belted|powerful)\)\s*/gi, '')
+      
+      // Remove "(Backing vocals)" and "(Ad-libs)" labels - the content should be directly in parentheses
+      generatedLyrics = generatedLyrics.replace(/\(Backing vocals\)\s*/gi, '')
+      generatedLyrics = generatedLyrics.replace(/\(Ad-libs?\)\s*/gi, '')
       
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {

@@ -743,18 +743,26 @@ Driving through the night
 [Solo]
 (Guitar solo - slow, mournful, bluesy)`
 : `[Verse]
-My car is cool and dusty
-Every mile tells a story
-Singing loud in the summer heat
+In the hush of night, we find our space,
+Wrapped in moonlight's gentle embrace.
+Your whisper's soft, like a velvet song,
+In this tender moment, where we both belong.
 
 [Chorus]
-Driving through the night
-Under starlight
-Feeling so right
+Just you and me, in this lazy jazz,
+Our souls entwined, nothing else we ask.
+In this serenade, we sway and sigh,
+Lost in this love, beneath the starry sky.
 
 [Bridge]
-Chrome catching memories
-Of all the miles we've driven`}
+Your voice, a lullaby, soothes my soul,
+In this night, together, we feel whole.
+Each moment shared, a timeless flight,
+In this gentle jazz, we find our light.
+
+[Outro]
+As dawn approaches, and stars fade away,
+In your arms, I wish to forever stay.`}
                           </pre>
                         </div>
                       </div>

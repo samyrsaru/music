@@ -158,28 +158,77 @@ app.post('/generate', async (c) => {
       .run(lifetimeDeduction, auth.userId)
   }
 
-  const { name } = await c.req.json()
-  
   const generationId = crypto.randomUUID()
   
   console.log(`🎵 [START] Generation started for user: ${auth.userId.substring(0, 8)}...`)
   console.log(`   Generation ID: ${generationId}`)
   console.log(`   Lyrics: ${lyrics.substring(0, 50)}...`)
   console.log(`   Prompt: ${prompt || 'pop music'}`)
-  console.log(`   Name: ${name || '(not provided)'}`)
 
-  // Use provided name or fallback to truncated prompt
-  const generatedName = name?.trim() || prompt.split(' ').slice(0, 4).join(' ') || 'My Song'
-  const finalName = generatedName.length > 60 ? generatedName.substring(0, 60) : generatedName
+  // Generate song title from lyrics
+  console.log(`🎵 [NAME] Generating title from lyrics...`)
+  let generatedName = ''
+  let nameAttempts = 0
+  const maxNameAttempts = 2
   
-  console.log(`✅ [NAME] Using: "${finalName}"`)
+  while (nameAttempts < maxNameAttempts) {
+    nameAttempts++
+    console.log(`🎵 [NAME] Attempt ${nameAttempts}/${maxNameAttempts}`)
+    
+    const namePrompt = `Create a catchy song title (2-6 words) based on these lyrics.
+
+Lyrics:
+${lyrics.substring(0, 500)}
+
+Examples of good titles:
+- "Summer Nights"
+- "Lost in Your Eyes" 
+- "Electric Dreams"
+- "Rainy Day Blues"
+
+Respond with only the title text, nothing else.`
+
+    try {
+      const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
+        input: {
+          prompt: namePrompt,
+          max_tokens: 30,
+          temperature: 0.8,
+          system_prompt: "You are a songwriting assistant. Create catchy song titles. Output only the title text, no quotes, no explanations, no labels."
+        }
+      }) as any
+
+      generatedName = cleanLlmOutput(nameOutput)
+      
+      // Limit length
+      if (generatedName.length > 60) {
+        generatedName = generatedName.substring(0, 60)
+      }
+      
+      // Check if valid
+      if (isValidTitle(generatedName)) {
+        console.log(`✅ [NAME] Valid title: "${generatedName}"`)
+        break
+      } else {
+        console.log(`⚠️ [NAME] Invalid title attempt ${nameAttempts}: "${generatedName}"`)
+      }
+    } catch (titleError) {
+      console.error(`❌ [NAME] Title generation error on attempt ${nameAttempts}:`, titleError)
+    }
+  }
+  
+  // Fallback if title generation failed
+  if (!isValidTitle(generatedName)) {
+    generatedName = prompt?.split(' ').slice(0, 4).join(' ') || 'My Song'
+    console.log(`✅ [NAME] Fallback title: "${generatedName}"`)
+  }
 
   try {
     // Create pending generation record
     db.prepare(`
       INSERT INTO generations (id, clerkUserId, lyrics, prompt, name, originalIdea, status, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, 'pending', datetime('now'))
-    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', finalName, originalIdea || null)
+    `).run(generationId, auth.userId, lyrics, prompt || 'pop music', generatedName, originalIdea || null)
 
     // Start async generation with webhook
     const input = {
@@ -304,64 +353,6 @@ app.post('/generate/webhook', async (c) => {
 
       console.log(`✅ [WEBHOOK] Generation completed! URL: ${audioUrl.substring(0, 60)}...`)
 
-      // Generate song title from lyrics
-      console.log(`🎵 [WEBHOOK] Generating title from lyrics...`)
-      let generatedName = ''
-      let nameAttempts = 0
-      const maxNameAttempts = 2
-      
-      while (nameAttempts < maxNameAttempts) {
-        nameAttempts++
-        console.log(`🎵 [WEBHOOK] Title attempt ${nameAttempts}/${maxNameAttempts}`)
-        
-        const namePrompt = `Create a catchy song title (2-6 words) based on these lyrics.
-
-Lyrics:
-${generation.lyrics.substring(0, 500)}
-
-Examples of good titles:
-- "Summer Nights"
-- "Lost in Your Eyes" 
-- "Electric Dreams"
-- "Rainy Day Blues"
-
-Respond with only the title text, nothing else.`
-
-        try {
-          const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
-            input: {
-              prompt: namePrompt,
-              max_tokens: 30,
-              temperature: 0.8,
-              system_prompt: "You are a songwriting assistant. Create catchy song titles. Output only the title text, no quotes, no explanations, no labels."
-            }
-          }) as any
-
-          generatedName = cleanLlmOutput(nameOutput)
-          
-          // Limit length
-          if (generatedName.length > 60) {
-            generatedName = generatedName.substring(0, 60)
-          }
-          
-          // Check if valid
-          if (isValidTitle(generatedName)) {
-            console.log(`✅ [WEBHOOK] Valid title: "${generatedName}"`)
-            break
-          } else {
-            console.log(`⚠️ [WEBHOOK] Invalid title attempt ${nameAttempts}: "${generatedName}"`)
-          }
-        } catch (titleError) {
-          console.error(`❌ [WEBHOOK] Title generation error on attempt ${nameAttempts}:`, titleError)
-        }
-      }
-      
-      // Fallback if title generation failed
-      if (!isValidTitle(generatedName)) {
-        generatedName = generation.prompt?.split(' ').slice(0, 4).join(' ') || 'My Song'
-        console.log(`✅ [WEBHOOK] Fallback title: "${generatedName}"`)
-      }
-
       // Upload to R2 for permanent storage
       let r2Key: string | null = null
       try {
@@ -376,18 +367,17 @@ Respond with only the title text, nothing else.`
         console.error('[WEBHOOK] R2 upload failed:', r2Error)
       }
 
-      // Update generation status with title
+      // Update generation status
       db.prepare(`
         UPDATE generations 
         SET status = 'completed', 
             audioUrl = ?, 
             r2Key = ?, 
-            name = ?,
             completedAt = datetime('now')
         WHERE id = ?
-      `).run(audioUrl, r2Key, generatedName, generation.id)
+      `).run(audioUrl, r2Key, generation.id)
 
-      console.log(`💾 [WEBHOOK] Generation ${generation.id} marked as completed with title: "${generatedName}"`)
+      console.log(`💾 [WEBHOOK] Generation ${generation.id} marked as completed with existing title: "${generation.name}"`)
 
     } catch (error: any) {
       console.error(`❌ [WEBHOOK] Failed to process successful generation:`, error.message)

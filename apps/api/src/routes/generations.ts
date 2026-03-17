@@ -411,9 +411,14 @@ app.post('/lyrics', async (c) => {
 
 Requirements:
 - Format: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] sections
-- Length: ${MODEL_CONFIG.constraints.lyrics.min}-${MODEL_CONFIG.constraints.lyrics.max} characters
+- Target length: 500-600 characters (write full, complete sections)
+- Each verse: 6-8 lines
+- Each chorus: 4-6 lines (repeated)
+- Bridge: 4-6 lines
 - Rhyme scheme: AABB or ABAB
 - Start immediately with [Verse], no introductions
+
+Write substantial, complete lyrics. Do not be brief.
 
 Begin:`
 

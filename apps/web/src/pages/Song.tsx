@@ -33,6 +33,7 @@ function Song() {
   const [isSavingName, setIsSavingName] = useState(false)
   const [nameError, setNameError] = useState('')
   const [togglingFavorite, setTogglingFavorite] = useState(false)
+  const [copiedField, setCopiedField] = useState<string | null>(null)
 
   const NAME_MIN_LENGTH = 1
   const NAME_MAX_LENGTH = 60
@@ -86,6 +87,16 @@ function Song() {
       minute: '2-digit',
       hour12: false
     })
+  }
+
+  const copyToClipboard = async (text: string, field: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedField(field)
+      setTimeout(() => setCopiedField(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
   }
 
   const saveName = async () => {
@@ -407,18 +418,52 @@ function Song() {
               {/* Original Idea */}
               {generation.originalIdea && (
                 <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-6">
-                  <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-2">
-                    Original Idea
-                  </h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">
+                      Original Idea
+                    </h3>
+                    <button
+                      onClick={() => copyToClipboard(generation.originalIdea!, 'originalIdea')}
+                      className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                      title="Copy to clipboard"
+                    >
+                      {copiedField === 'originalIdea' ? (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                   <p className="text-lg text-zinc-600 dark:text-zinc-400">{generation.originalIdea}</p>
                 </div>
               )}
 
               {/* Style Info */}
               <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-xl p-6">
-                <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wide mb-2">
-                  Style
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">
+                    Style
+                  </h3>
+                  <button
+                    onClick={() => copyToClipboard(generation.prompt, 'style')}
+                    className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors"
+                    title="Copy to clipboard"
+                  >
+                    {copiedField === 'style' ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
                 <p className="text-lg">{generation.prompt}</p>
               </div>
 

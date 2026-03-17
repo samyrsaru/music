@@ -83,11 +83,12 @@ function Studio() {
     localStorage.setItem('app-settings-skip-review', JSON.stringify(skipReview))
   }, [skipReview])
 
-  // Check for pre-filled lyrics and style from URL params
+  // Check for pre-filled lyrics, style, and model from URL params
   useEffect(() => {
     const prefillLyrics = searchParams.get('lyrics')
     const prefillStyle = searchParams.get('style')
-    
+    const prefillModel = searchParams.get('model')
+
     if (prefillLyrics) {
       setLyrics(prefillLyrics)
       setStep('lyrics')
@@ -95,7 +96,10 @@ function Studio() {
     if (prefillStyle) {
       setPrompt(prefillStyle)
     }
-  }, [searchParams])
+    if (prefillModel && availableModels.some(m => m.id === prefillModel)) {
+      setSelectedModel(prefillModel)
+    }
+  }, [searchParams, availableModels])
 
   useEffect(() => {
     if (isLoaded && userId) {

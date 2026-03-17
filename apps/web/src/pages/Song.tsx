@@ -74,7 +74,8 @@ function Song() {
     if (!generation) return
     const params = new URLSearchParams({
       lyrics: generation.lyrics,
-      style: generation.prompt
+      style: generation.prompt,
+      model: generation.model
     })
     navigate(`/studio?${params.toString()}`)
   }

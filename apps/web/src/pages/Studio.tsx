@@ -729,19 +729,48 @@ function Studio() {
                           <pre className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded text-xs text-zinc-600 dark:text-zinc-400 overflow-x-auto">
 {selectedModel === 'minimax/music-2.5' 
 ? `[Intro]
-(Piano - soft, building gently)
+(Soft piano, building slowly)
+Oh, here we go again...
 
 [Verse]
-My car is cool and dusty
-Every mile tells a story
+The city lights are fading out
+I'm walking through the empty streets
+Every shadow tells a story
+Of the ones I'll never meet
+
+[Pre Chorus]
+And I can feel it rising
+Something breaking through the night
 
 [Chorus]
-Driving through the night
-(ooh yeah) Under starlight
-(whoa-oh-oh) Feeling so right
+We're burning like the northern lights
+Dancing on the edge of time
+Nothing lasts but nothing dies
+We're burning like the northern lights
+
+[Verse]
+The radio plays our favorite song
+A melody from years ago
+I turn it up and close my eyes
+And let the memories overflow
+
+[Bridge]
+Maybe we were never meant to stay
+Maybe that's what made it beautiful
+
+[Chorus]
+We're burning like the northern lights
+Dancing on the edge of time
+Nothing lasts but nothing dies
+We're burning like the northern lights
 
 [Solo]
-(Guitar solo - slow, mournful, bluesy)`
+(Electric guitar solo, soaring and emotional)
+
+[Outro]
+(Fading out)
+Like the northern lights...
+Like the northern lights...`
 : `[Verse]
 In the hush of night, we find our space,
 Wrapped in moonlight's gentle embrace.

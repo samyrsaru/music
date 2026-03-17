@@ -441,9 +441,25 @@ Begin:`
       
       generatedLyrics = cleanLlmOutput(lyricsOutput, true)
       
-      // Ensure it fits constraints
+      // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > MODEL_CONFIG.constraints.lyrics.max) {
-        generatedLyrics = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
+        // Find the last section marker before the limit
+        const truncated = generatedLyrics.substring(0, MODEL_CONFIG.constraints.lyrics.max)
+        const lastVerse = truncated.lastIndexOf('[Verse]')
+        const lastChorus = truncated.lastIndexOf('[Chorus]')
+        const lastBridge = truncated.lastIndexOf('[Bridge]')
+        
+        // Find the last section start
+        const lastSection = Math.max(lastVerse, lastChorus, lastBridge)
+        
+        if (lastSection > 0) {
+          // Keep everything up to the last complete section
+          generatedLyrics = truncated.substring(0, lastSection).trim()
+          console.log(`✂️ [LYRICS] Truncated at section boundary, new length: ${generatedLyrics.length}`)
+        } else {
+          // No section marker found, just truncate
+          generatedLyrics = truncated
+        }
       }
       
       // Validate format

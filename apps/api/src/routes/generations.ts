@@ -523,7 +523,7 @@ app.post('/lyrics', async (c) => {
     const isAdvancedModel = modelConfig.id === 'minimax/music-2.5'
     
     const sectionTags = isAdvancedModel 
-      ? `[Intro], [Verse], [Pre Chorus], [Chorus], [Post Chorus], [Hook], [Drop], [Bridge], [Solo], [Inst], [Build Up], [Interlude], [Break], [Transition], [Outro]`
+      ? `[Intro], [Verse], [Pre Chorus], [Chorus], [Post Chorus], [Hook], [Drop], [Bridge], [Build Up], [Interlude], [Break], [Transition], [Outro]`
       : `[Intro], [Verse], [Chorus], [Bridge], [Outro]`
     
     const sectionInstructions = isAdvancedModel
@@ -534,26 +534,13 @@ app.post('/lyrics', async (c) => {
 - Recommended structure: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] as base
 - [Outro] should be the LAST section - NEVER put [Verse] or [Chorus] after [Outro]
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
-- Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
 - Include backing vocals and ad-libs only when it makes sense for the song - not every song needs them. Use sparingly, not on every line
-- Parentheses are ONLY for two things: backing vocals OR musical instruments
-- Backing vocals (in [Verse], [Chorus], [Bridge], etc. - NOT in instrumental sections): sung phrases and sounds
+- Parentheses are ONLY for backing vocals - never for instruments or emotional cues
+- Backing vocals (in [Verse], [Chorus], [Bridge], etc.): sung phrases and sounds
   Examples: (ooh yeah), (whoa-oh-oh), (la la la hey), (mmm mmm), (ah ah)
-- Instrumental sections [Intro], [Solo], [Inst], [Interlude] are OPTIONAL - most songs don't need them
-- If you use instrumental sections, keep them BRIEF: 1-2 instruments maximum
-- CORRECT instrumental format (describe the instrument and style):
-    [Solo]
-    (Guitar solo - slow, mournful, bluesy)
-    
-    [Inst]
-    (Piano and strings building intensity)
-- NEVER write lyrics after instrumental cues on the same line
-- DO NOT write instrumental cues in [Verse], [Chorus], [Bridge], etc. - only backing vocals there
-- Valid instruments: Guitar, Piano, Strings, Drums, Bass, Synth - describe how they sound
 - DO NOT write emotional delivery cues like (romantic), (sad), (angry) - MiniMax sings these as lyrics
 - DO NOT write scene descriptions: (Soft spray of water), (Wind building), (Water sounds), (Traffic noise)
-- DO NOT write environmental sounds as instruments: (Engine notes), (Wind building), (Water sounds), (Traffic noise)
 - NEVER put multiple parenthetical groups on the same line`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
@@ -620,17 +607,13 @@ Begin:`
       generatedLyrics = generatedLyrics.replace(/\[Chorus\s+\d+\]/gi, '[Chorus]')
       generatedLyrics = generatedLyrics.replace(/\[Bridge\s+\d+\]/gi, '[Bridge]')
       
-      // Convert specific instrument solos like [Guitar solo] to just [Solo]
-      generatedLyrics = generatedLyrics.replace(/\[\w+\s+Solo\]/gi, '[Solo]')
-      
-
       
       // Remove trailing rhyme scheme annotations like (A), (B), (C), etc. at end of lines
       generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/gm, '')
       generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*(?=\n)/g, '')
       generatedLyrics = generatedLyrics.replace(/\s*\([A-Z]\)\s*$/g, '')
       
-      // Remove parenthetical vocal delivery directions only - keep backing vocals and instrumental cues
+      // Remove parenthetical vocal delivery directions only - keep backing vocals
       generatedLyrics = generatedLyrics.replace(/\s*\((softly|whispered|belted|powerful)\)\s*/gi, '')
       
       // Remove "(Backing vocals)" and "(Ad-libs)" labels - the content should be directly in parentheses
@@ -668,7 +651,7 @@ Begin:`
         // Find the last section marker before the limit
         const truncated = generatedLyrics.substring(0, maxLength)
         const sectionMarkers = isAdvancedModel
-          ? ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]', '[Hook]', '[Drop]', '[Pre Chorus]', '[Post Chorus]', '[Build Up]', '[Interlude]', '[Break]', '[Transition]', '[Solo]', '[Inst]']
+          ? ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]', '[Hook]', '[Drop]', '[Pre Chorus]', '[Post Chorus]', '[Build Up]', '[Interlude]', '[Break]', '[Transition]']
           : ['[Verse]', '[Chorus]', '[Bridge]', '[Intro]', '[Outro]']
         
         let lastSection = 0

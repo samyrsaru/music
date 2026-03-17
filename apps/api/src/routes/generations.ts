@@ -60,13 +60,25 @@ function cleanLlmOutput(output: any, preserveNewlines: boolean = false): string 
 
 // Helper function to check if a title looks valid
 function isValidTitle(title: string): boolean {
-  if (!title || title.length < 2) return false
-  if (title.length > 100) return false
+  if (!title || title.length < 2) {
+    console.log(`🎵 [NAME] Invalid: too short (${title?.length || 0} chars)`)
+    return false
+  }
+  if (title.length > 100) {
+    console.log(`🎵 [NAME] Invalid: too long (${title.length} chars)`)
+    return false
+  }
   // Check if it contains section markers (shouldn't be in a title)
-  if (/\[(Verse|Chorus|Bridge)\]/i.test(title)) return false
+  if (/\[(Verse|Chorus|Bridge)\]/i.test(title)) {
+    console.log(`🎵 [NAME] Invalid: contains section markers`)
+    return false
+  }
   // Check if it's just common words
   const lowercase = title.toLowerCase().trim()
-  if (['the', 'a', 'an', 'song', 'track', 'title', 'music'].includes(lowercase)) return false
+  if (['the', 'a', 'an', 'song', 'track', 'title', 'music'].includes(lowercase)) {
+    console.log(`🎵 [NAME] Invalid: common word only`)
+    return false
+  }
   return true
 }
 
@@ -532,7 +544,13 @@ Style:`
 Lyrics:
 ${generatedLyrics.substring(0, 500)}
 
-Respond with only the title, nothing else.`
+Examples of good titles:
+- "Summer Nights"
+- "Lost in Your Eyes" 
+- "Electric Dreams"
+- "Rainy Day Blues"
+
+Respond with only the title text, nothing else.`
 
       const nameOutput = await replicate.run("meta/meta-llama-3-8b-instruct", {
         input: {
@@ -543,7 +561,9 @@ Respond with only the title, nothing else.`
         }
       }) as any
 
+      console.log(`🎵 [NAME] Raw LLM output:`, JSON.stringify(nameOutput))
       generatedName = cleanLlmOutput(nameOutput)
+      console.log(`🎵 [NAME] After cleaning: "${generatedName}"`)
       
       // Limit length
       if (generatedName.length > 60) {

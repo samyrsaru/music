@@ -412,13 +412,14 @@ app.post('/lyrics', async (c) => {
 Requirements:
 - Format: [Verse], [Chorus], [Verse], [Chorus], [Bridge], [Chorus] sections
 - Target length: 500-600 characters (write full, complete sections)
+- Maximum: 600 characters - do not exceed this
 - Each verse: 4-8 lines
 - Each chorus: 4-6 lines (repeated)
 - Bridge: 4-6 lines
 - Rhyme scheme: AABB or ABAB
 - Start immediately with [Verse], no introductions
 
-Write substantial, complete lyrics. Do not be brief.
+Write substantial, complete lyrics. Do not be brief. Stay within the 600 character limit.
 
 Begin:`
 

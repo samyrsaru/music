@@ -113,7 +113,20 @@ function TermsOfService() {
           <section>
             <h2 className="text-xl font-semibold mb-3">10. Disclaimer of Warranties</h2>
             <p>
-              Our service is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that the service will be uninterrupted, secure, or error-free, or that AI-generated content will meet your expectations.
+              Our service is provided "as is" without warranties of any kind, either express or implied. We do not guarantee that the service will be uninterrupted, secure, or error-free.
+            </p>
+            <p className="mt-4">
+              AI-generated content may contain errors, inaccuracies, or artifacts including but not limited to:
+            </p>
+            <ul className="list-disc pl-6 space-y-1">
+              <li>Audio distortions, glitches, or quality issues</li>
+              <li>Incorrect or nonsensical lyrics</li>
+              <li>Misinterpretation of your prompts or instructions</li>
+              <li>Unintended similarities to existing works</li>
+              <li>Content that does not match your requested style, genre, or mood</li>
+            </ul>
+            <p className="mt-4">
+              While we strive our best to prevent these issues and continuously work to improve our AI generation quality, we cannot guarantee their complete absence. We do not guarantee the quality, accuracy, or suitability of AI-generated content for any particular purpose. You acknowledge that AI-generated outputs are experimental and may not meet your expectations.
             </p>
           </section>
 

@@ -534,15 +534,19 @@ app.post('/lyrics', async (c) => {
 - Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
 - For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
-- DO include backing vocals and ad-libs - each on its OWN separate line with the ENTIRE line being only the vocal content in parentheses, no text outside
-- NEVER put multiple parenthetical groups on the same line. Examples:
+- DO include backing vocals and ad-libs - each on its OWN separate line with ONLY sung vocal sounds in parentheses
+- NEVER write descriptions like (soft vocals), (whispered delivery), (backing vocals rise), (ad-libs float) - these are NOT lyrics
+- ONLY use actual sung sounds: ooh, ah, whoa, la, hey, yeah, mmm, etc.
+- Examples of GOOD backing vocals:
   (oooh oooh oooh)
-  (whoa-oh-oh)
-  (la la la)
-  (rain rain rain)
+  (whoa-oh-oh yeah)
+  (la la la hey)
+  (mmm mmm)
+  (ah ah ah)
+- NEVER put multiple parenthetical groups on the same line
 - DO include instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
 - NEVER put cues inline with lyrics - each cue must be on its own separate line
-- NEVER write "(Backing vocals)" or "(Ad-libs)" as labels - put the actual vocal content directly in parentheses`
+- NEVER write "(Backing vocals)" or "(Ad-libs)" as labels`
       : `REQUIRED STRUCTURE: You MUST include both [Verse] AND [Chorus] sections. Use these tags: [Intro], [Verse], [Chorus], [Bridge], [Outro].
 - Format example:
 [Intro]
@@ -619,6 +623,9 @@ Begin:`
       // Remove "(Backing vocals)" and "(Ad-libs)" labels - the content should be directly in parentheses
       generatedLyrics = generatedLyrics.replace(/\(Backing vocals\)\s*/gi, '')
       generatedLyrics = generatedLyrics.replace(/\(Ad-libs?\)\s*/gi, '')
+      
+      // Remove descriptive labels that are not actual sung sounds
+      generatedLyrics = generatedLyrics.replace(/\s*\((soft vocals|whispered delivery|belted vocals|powerful vocals|backing vocals rise|ad-libs float|harmonies|backing vocals)\)\s*/gi, '')
       
       // Ensure it fits constraints - truncate at last complete section if too long
       if (generatedLyrics.length > maxLength) {

@@ -534,7 +534,7 @@ app.post('/lyrics', async (c) => {
 - Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
 - For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
-- DO include backing vocals and ad-libs on their own line with the actual vocal content in parentheses - e.g., (harmony lyrics here), (ad-lib lyrics here)
+- DO include backing vocals and ad-libs on their own line with creative vocal content in parentheses - vary it! Examples: (oooh oooh), (harmonies rising), (echoes fade), (whoa-oh-oh)
 - DO include instrumental cues on their own line: (Guitar solo), (Strings building), (Beat drops)
 - NEVER put cues inline with lyrics - each cue must be on its own separate line
 - NEVER write "(Backing vocals)" or "(Ad-libs)" as labels - put the actual vocal content directly in parentheses`

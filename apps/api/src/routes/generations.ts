@@ -533,7 +533,6 @@ app.post('/lyrics', async (c) => {
 - Optional: Add [Intro], [Outro], [Pre Chorus], [Post Chorus], [Build Up], [Drop] for EDM
 - Use [Inst], [Solo], [Interlude] for instrumental sections - NEVER use [Guitar solo], [Piano solo], etc. Only use [Solo]
 - Use [Break], [Transition] for dynamic changes
-- For vocal delivery cues (softly, whispered, belted, powerful), put them in the style description (e.g., "soft vocals", "whispered delivery") instead of in parentheses
 - DO include backing vocals and ad-libs - each on its OWN separate line with ONLY sung vocal sounds in parentheses
 - ONLY use actual sung sounds: ooh, ah, whoa, la, hey, yeah, mmm, etc.
 - Examples:

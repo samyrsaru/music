@@ -665,8 +665,9 @@ app.get('/', async (c) => {
 
   // Transform ephemeral generations to match the format
   const transformedEphemeral = ephemeralGenerations.map((gen) => {
-    // Calculate expiration
-    const createdAt = new Date(gen.createdAt + 'Z')
+    // Calculate expiration - handle both SQLite format and ISO8601 format
+    const createdAtStr = gen.createdAt.endsWith('Z') ? gen.createdAt : gen.createdAt + 'Z'
+    const createdAt = new Date(createdAtStr)
     const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000)
     const now = new Date()
     const isExpired = now > expiresAt

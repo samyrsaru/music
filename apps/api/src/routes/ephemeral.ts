@@ -183,8 +183,9 @@ app.get('/status/:id', async (c) => {
     return c.json({ error: 'Generation not found' }, 404)
   }
 
-  // Calculate expiration time (1 hour from creation)
-  const createdAt = new Date(generation.createdAt + 'Z')
+  // Calculate expiration time (1 hour from creation) - handle both SQLite format and ISO8601 format
+  const createdAtStr = generation.createdAt.endsWith('Z') ? generation.createdAt : generation.createdAt + 'Z'
+  const createdAt = new Date(createdAtStr)
   const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000)
   const now = new Date()
   const isExpired = now > expiresAt

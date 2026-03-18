@@ -331,10 +331,12 @@ Respond with only the title text, nothing else.`
 })
 
 // Webhook endpoint for Replicate
+// Note: This endpoint is deprecated in favor of /api/webhooks/replicate
+// Both regular and ephemeral generations are handled there
 app.post('/generate/webhook', async (c) => {
   const payload = await c.req.json()
   
-  console.log(`🔔 [WEBHOOK] Received webhook:`, JSON.stringify(payload, null, 2))
+  console.log(`🔔 [WEBHOOK] Received webhook at deprecated endpoint:`, JSON.stringify(payload, null, 2))
   
   // Verify this is a prediction we care about
   const { id: replicateId, status: replicateStatus, output } = payload
@@ -344,12 +346,89 @@ app.post('/generate/webhook', async (c) => {
     return c.json({ error: 'Missing prediction ID' }, 400)
   }
 
-  // Find the generation by replicate ID
+  // Find the generation by replicate ID (regular generations)
   const generation = db.prepare(`
     SELECT * FROM generations WHERE replicateId = ?
   `).get(replicateId) as any
 
   if (!generation) {
+    // Check if this is an ephemeral generation - if so, redirect logic to handle it
+    const ephemeralGen = db.prepare(`
+      SELECT * FROM ephemeral_generations WHERE replicateId = ?
+    `).get(replicateId) as any
+    
+    if (ephemeralGen) {
+      console.log(`ℹ️ [WEBHOOK] Found ephemeral generation ${ephemeralGen.id}, processing...`)
+      
+      if (replicateStatus === 'succeeded') {
+        try {
+          // Extract audio URL from output
+          let audioUrl: string | null = null
+          
+          if (typeof output === 'string') {
+            audioUrl = output
+          } else if (Array.isArray(output) && output.length > 0) {
+            audioUrl = String(output[0])
+          } else if (output && typeof output === 'object') {
+            if (output.url) {
+              audioUrl = typeof output.url === 'function' ? output.url() : String(output.url)
+            } else if (output.output) {
+              if (Array.isArray(output.output) && output.output.length > 0) {
+                audioUrl = String(output.output[0])
+              } else {
+                audioUrl = String(output.output)
+              }
+            } else if (output.audio) {
+              audioUrl = String(output.audio)
+            } else {
+              const values = Object.values(output)
+              const urlValue = values.find(v => typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://')))
+              if (urlValue) audioUrl = urlValue as string
+            }
+          }
+
+          if (!audioUrl) {
+            throw new Error('No audio URL in webhook payload')
+          }
+
+          // Update ephemeral generation status - NO R2 UPLOAD
+          db.prepare(`
+            UPDATE ephemeral_generations 
+            SET status = 'completed', audioUrl = ?
+            WHERE replicateId = ?
+          `).run(audioUrl, replicateId)
+
+          console.log(`✅ [WEBHOOK] Ephemeral generation ${ephemeralGen.id} completed`)
+          return c.json({ success: true })
+
+        } catch (error: any) {
+          console.error(`❌ [WEBHOOK] Failed to process ephemeral generation:`, error.message)
+          db.prepare(`
+            UPDATE ephemeral_generations 
+            SET status = 'failed'
+            WHERE replicateId = ?
+          `).run(replicateId)
+          return c.json({ success: true })
+        }
+      } else if (replicateStatus === 'failed' || replicateStatus === 'canceled') {
+        db.prepare(`
+          UPDATE ephemeral_generations 
+          SET status = 'failed'
+          WHERE replicateId = ?
+        `).run(replicateId)
+        
+        // Refund credits
+        const modelCost = ephemeralGen.model === 'minimax/music-2.5' ? 50 : 10
+        db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + ? WHERE clerkUserId = ?')
+          .run(modelCost, ephemeralGen.clerkUserId)
+        
+        console.log(`💰 [WEBHOOK] Ephemeral generation failed, ${modelCost} credits refunded`)
+        return c.json({ success: true })
+      }
+      
+      return c.json({ success: true })
+    }
+    
     console.error(`❌ [WEBHOOK] Generation not found for replicateId: ${replicateId}`)
     return c.json({ error: 'Generation not found' }, 404)
   }

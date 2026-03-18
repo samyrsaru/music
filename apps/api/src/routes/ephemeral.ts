@@ -102,7 +102,6 @@ app.post('/generate', async (c) => {
   const generationId = crypto.randomUUID()
   
   console.log(`🔒 [EPHEMERAL] Generation started for user: ${auth.userId.substring(0, 8)}...`)
-  console.log(`   Generation ID: ${generationId}`)
 
   try {
     // Create pending ephemeral generation record (NO lyrics/prompt stored!)

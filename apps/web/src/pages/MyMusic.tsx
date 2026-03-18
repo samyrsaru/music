@@ -290,7 +290,7 @@ function MyMusic() {
                             )}
                             {gen.isEphemeral && gen.expiresAt && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
-                                Expires {new Date(gen.expiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                Expires at {new Date(gen.expiresAt + (gen.expiresAt.endsWith('Z') ? '' : 'Z')).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                               </span>
                             )}
                           </div>

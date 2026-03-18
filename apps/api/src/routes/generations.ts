@@ -206,9 +206,6 @@ app.post('/generate', async (c) => {
   const generationId = crypto.randomUUID()
   
   console.log(`🎵 [START] Generation started for user: ${auth.userId.substring(0, 8)}...`)
-  console.log(`   Generation ID: ${generationId}`)
-  console.log(`   Lyrics: ${lyrics.substring(0, 50)}...`)
-  console.log(`   Prompt: ${prompt || 'pop music'}`)
 
   // Generate song title from lyrics
   console.log(`🎵 [NAME] Generating title from lyrics...`)
@@ -393,7 +390,7 @@ app.post('/lyrics', async (c) => {
   const minLength = modelConfig.constraints.lyrics.min
 
   try {
-    console.log(`🎤 [LYRICS] Generating lyrics for: "${topic}" (Model: ${modelConfig.id})`)
+    console.log(`🎤 [LYRICS] Generating lyrics for user: ${auth.userId.substring(0, 8)}...`)
     
     // Generate lyrics with model-specific section tags
     const isAdvancedModel = modelConfig.id === 'minimax/music-2.5'
@@ -574,11 +571,11 @@ Begin:`
       }
     }
 
-    // Log the final generated lyrics
-    console.log(`🎤 [LYRICS] Final lyrics (${generatedLyrics.length} chars):\n---\n${generatedLyrics}\n---`)
+    // Log completion
+    console.log(`🎤 [LYRICS] Generation complete for user: ${auth.userId.substring(0, 8)}... (${generatedLyrics.length} chars)`)
 
     // Generate matching style based on the topic
-    console.log(`🎨 [STYLE] Generating style for: "${topic}"`)
+    console.log(`🎨 [STYLE] Generating style for user: ${auth.userId.substring(0, 8)}...`)
     
     const stylePrompt = `Create a detailed music style description for a song based on this concept: "${topic}".
 
@@ -627,8 +624,8 @@ Style description:`
       generatedStyle = `Upbeat ${topic.split(' ').slice(0, 3).join(' ')} style music`
     }
 
-    console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters`)
-    console.log(`✅ [STYLE] Generated: "${generatedStyle}"`)
+    console.log(`✅ [LYRICS] Generated ${generatedLyrics.length} characters for user: ${auth.userId.substring(0, 8)}...`)
+    console.log(`✅ [STYLE] Generated for user: ${auth.userId.substring(0, 8)}...`)
 
     return c.json({
       success: true,

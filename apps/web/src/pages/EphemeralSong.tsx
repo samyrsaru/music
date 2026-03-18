@@ -3,7 +3,7 @@ import { Show, useAuth } from '@clerk/react'
 import { Link, useParams } from 'react-router'
 import { registerAudioElement } from '../lib/audioManager.ts'
 import { useApi } from '../hooks/useApi'
-import { ExpirationTimer } from '../components/ExpirationTimer.tsx'
+
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -216,11 +216,8 @@ function EphemeralSong() {
                       Private Mode - Download Required
                     </h3>
                     <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
-                      This song is not saved to your library. Download within{' '}
-                      <ExpirationTimer 
-                        createdAt={status.createdAt} 
-                        className="inline"
-                      />{' '}
+                      This song is not saved to your library. Download before{' '}
+                      {new Date(status.expiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}{' '}
                       or it will be lost forever.
                     </p>
                   </div>
@@ -336,8 +333,7 @@ function EphemeralSong() {
                           Your song is ready!
                         </h3>
                         <p className="text-sm text-green-700 dark:text-green-500 mt-1">
-                          Download now - link expires in{' '}
-                          <ExpirationTimer createdAt={status.createdAt} />
+                          Download now - expires at {new Date(status.expiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                         </p>
                       </div>
                     </div>

@@ -31,6 +31,37 @@ function MyMusic() {
   const [search, setSearch] = useState('')
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [togglingFavorite, setTogglingFavorite] = useState<string | null>(null)
+  const [downloadingId, setDownloadingId] = useState<string | null>(null)
+
+  const handleDownload = async (gen: Generation, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!gen.audioUrl) return
+
+    setDownloadingId(gen.id)
+    try {
+      const response = await fetch(gen.audioUrl)
+      if (!response.ok) throw new Error('Failed to fetch audio')
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+      link.href = url
+      link.download = gen.isEphemeral
+        ? `private-song-${gen.id}.mp3`
+        : `${gen.name?.trim() || gen.prompt || 'makemusic'}.mp3`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download failed:', err)
+      window.open(gen.audioUrl, '_blank')
+    } finally {
+      setDownloadingId(null)
+    }
+  }
 
   const filteredGenerations = generations
     .filter(gen => {
@@ -352,18 +383,13 @@ function MyMusic() {
                           />
 
                           <div className="flex gap-3">
-                            <a
-                              href={gen.audioUrl}
-                              download={gen.isEphemeral ? `private-song-${gen.id}.mp3` : `${gen.name?.trim() || gen.prompt || 'makemusic'}.mp3`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                              }}
-                              className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-all text-center"
+                            <button
+                              onClick={(e) => handleDownload(gen, e)}
+                              disabled={downloadingId === gen.id}
+                              className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
                             >
-                              Download
-                            </a>
+                              {downloadingId === gen.id ? 'Downloading...' : 'Download'}
+                            </button>
                           </div>
                         </>
                       )}

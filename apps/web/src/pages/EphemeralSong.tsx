@@ -355,21 +355,9 @@ function EphemeralSong() {
                   <button
                     onClick={handleDownload}
                     disabled={isDownloading}
-                    className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+                    className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
                   >
-                    {isDownloading ? (
-                      <>
-                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                        Downloading...
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download MP3
-                      </>
-                    )}
+                    {isDownloading ? 'Downloading...' : 'Download'}
                   </button>
                 </>
               )}
@@ -407,8 +395,7 @@ function EphemeralSong() {
               {/* Info Footer */}
               <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
                 <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                  This is a private song that won't appear in your library. 
-                  Private songs are automatically deleted after 1 hour.
+                  Private songs appear in your library but are automatically deleted after 1 hour.
                 </p>
               </div>
             </div>

@@ -281,18 +281,10 @@ Respond with only the title text, nothing else.`
       prompt: prompt || 'pop music'
     }
 
-    // Use the unified webhook endpoint
-    // In production, we need the public URL. Try to get it from headers or env var.
-    const protocol = c.req.header('x-forwarded-proto') || 'https'
-    const host = c.req.header('host') || c.req.header('x-forwarded-host')
-    const baseUrl = process.env.REPLICATE_WEBHOOK_URL ? 
-      process.env.REPLICATE_WEBHOOK_URL.replace('/api/webhooks/replicate', '') :
-      (host ? `${protocol}://${host}` : `${c.req.url.replace('/api/generations/generate', '')}`)
+    // Use the unified webhook endpoint for all generations
+    const baseUrl = process.env.REPLICATE_WEBHOOK_URL || c.req.url.replace('/api/generations/generate', '')
     const webhookUrl = `${baseUrl}/api/webhooks/replicate`
 
-    console.log(`🔗 [WEBHOOK] Protocol: ${protocol}`)
-    console.log(`🔗 [WEBHOOK] Host: ${host}`)
-    console.log(`🔗 [WEBHOOK] Base URL: ${baseUrl}`)
     console.log(`🔗 [WEBHOOK] Webhook URL: ${webhookUrl}`)
 
     // Start the prediction asynchronously with webhook using the selected model

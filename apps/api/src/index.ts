@@ -7,7 +7,9 @@ import subscriptionRoutes from './routes/subscription.js'
 import creditsRoutes from './routes/credits.js'
 import webhookRoutes from './routes/webhooks.js'
 import generationRoutes from './routes/generations.js'
+import ephemeralRoutes from './routes/ephemeral.js'
 import { startPolling, getSyncStatus } from './lib/sync.js'
+import { startCleanupJob } from './lib/cleanup.js'
 
 console.log('CLERK_SECRET_KEY exists:', !!process.env.CLERK_SECRET_KEY)
 console.log('CLERK_PUBLISHABLE_KEY exists:', !!process.env.CLERK_PUBLISHABLE_KEY)
@@ -16,6 +18,9 @@ const app = new Hono()
 
 // Start polling for subscription sync (as backup to webhooks)
 startPolling()
+
+// Start ephemeral cleanup job
+startCleanupJob()
 
 app.use('*', cors({
   origin: process.env.WEB_URL || 'http://localhost:5173',
@@ -58,6 +63,7 @@ app.route('/subscription', subscriptionRoutes)
 app.route('/credits', creditsRoutes)
 app.route('/webhooks', webhookRoutes)
 app.route('/generations', generationRoutes)
+app.route('/ephemeral', ephemeralRoutes)
 
 const port = parseInt(process.env.PORT || '3003')
 

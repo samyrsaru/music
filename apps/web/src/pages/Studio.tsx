@@ -75,13 +75,24 @@ function Studio() {
     }
     return false
   })
+  const [ephemeral, setEphemeral] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('app-settings-ephemeral')
+      return saved ? JSON.parse(saved) : false
+    }
+    return false
+  })
   const [startingCheckout, setStartingCheckout] = useState(false)
   const navigate = useNavigate()
 
-  // Save skipReview preference to localStorage
+  // Save preferences to localStorage
   useEffect(() => {
     localStorage.setItem('app-settings-skip-review', JSON.stringify(skipReview))
   }, [skipReview])
+
+  useEffect(() => {
+    localStorage.setItem('app-settings-ephemeral', JSON.stringify(ephemeral))
+  }, [ephemeral])
 
   // Check for pre-filled lyrics, style, and model from URL params
   useEffect(() => {
@@ -253,7 +264,12 @@ function Studio() {
     setGenerationStatus('pending')
 
     try {
-      const res = await fetchWithAuth(`${API_URL}/api/generations/generate`, {
+      // Use ephemeral endpoint if private mode is enabled
+      const endpoint = ephemeral 
+        ? `${API_URL}/api/ephemeral/generate`
+        : `${API_URL}/api/generations/generate`
+      
+      const res = await fetchWithAuth(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -285,10 +301,24 @@ function Studio() {
       } else {
         setGenerationId(data.generationId)
         fetchStatus()
-        // Navigate to song page to view status
-        navigate(`/song/${data.generationId}`)
-        // Start polling for status
-        pollGenerationStatus(data.generationId)
+        
+        // For ephemeral mode, store data in sessionStorage and navigate to ephemeral page
+        if (ephemeral) {
+          const songs = JSON.parse(sessionStorage.getItem('ephemeral-songs') || '{}')
+          songs[data.generationId] = {
+            lyrics: songLyrics,
+            prompt: songPrompt,
+            originalIdea: originalConcept || songIdea,
+            createdAt: Date.now()
+          }
+          sessionStorage.setItem('ephemeral-songs', JSON.stringify(songs))
+          navigate(`/ephemeral/${data.generationId}`)
+        } else {
+          // Navigate to song page to view status
+          navigate(`/song/${data.generationId}`)
+          // Start polling for status
+          pollGenerationStatus(data.generationId)
+        }
       }
     } catch (err: any) {
       setError('Failed to start generation')
@@ -520,6 +550,27 @@ function Studio() {
                           />
                           <span className="text-sm text-zinc-600 dark:text-zinc-400">Skip review & generate directly</span>
                         </label>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-3">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={ephemeral}
+                            onChange={(e) => setEphemeral(e.target.checked)}
+                            className="w-4 h-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-500"
+                          />
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">Private mode (don't save to library)</span>
+                        </label>
+                        <div className="group relative">
+                          <svg className="w-4 h-4 text-zinc-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="invisible group-hover:visible absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 p-3 bg-zinc-900 dark:bg-zinc-800 text-white text-xs rounded-lg shadow-xl z-50">
+                            <p>Song won't be saved to your library. Download within 1 hour or it will be lost forever. Audio remains accessible if you reopen this page, but lyrics will only show in the original tab.</p>
+                            <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-zinc-900 dark:border-t-zinc-800"></div>
+                          </div>
+                        </div>
                       </div>
 
                       <button

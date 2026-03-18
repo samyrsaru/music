@@ -175,4 +175,23 @@ db.exec(`
   VALUES (1, NULL, 0, 0)
 `)
 
+// Create ephemeral_generations table for private mode (no lyrics/prompt stored)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ephemeral_generations (
+    id TEXT PRIMARY KEY,
+    clerkUserId TEXT NOT NULL,
+    replicateId TEXT UNIQUE,
+    status TEXT DEFAULT 'pending',
+    audioUrl TEXT,
+    createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (clerkUserId) REFERENCES users(clerkUserId)
+  )
+`)
+
+// Create index for cleanup queries
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_ephemeral_created 
+  ON ephemeral_generations(createdAt)
+`)
+
 export default db

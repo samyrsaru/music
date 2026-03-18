@@ -4,6 +4,7 @@ import Home from './pages/Home'
 import Studio from './pages/Studio'
 import MyMusic from './pages/MyMusic'
 import Song from './pages/Song'
+import EphemeralSong from './pages/EphemeralSong'
 import Account from './pages/Account'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
@@ -18,6 +19,7 @@ function App() {
           <Route path="/studio" element={<Studio />} />
           <Route path="/library" element={<MyMusic />} />
           <Route path="/song/:id" element={<Song />} />
+          <Route path="/ephemeral/:id" element={<EphemeralSong />} />
           <Route path="/account" element={<Account />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />

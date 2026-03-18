@@ -119,7 +119,7 @@ function EphemeralSong() {
       // Create a temporary link and trigger download
       const link = document.createElement('a')
       link.href = url
-      link.download = `private-song-${id}.mp3`
+      link.download = `incognito-song-${id}.mp3`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -146,8 +146,8 @@ function EphemeralSong() {
       <main className="max-w-4xl mx-auto px-6 py-12">
         <Show when="signed-out">
           <div className="text-center py-20">
-            <h1 className="text-4xl font-bold mb-4">Private Song</h1>
-            <p className="text-zinc-600 dark:text-zinc-400 mb-8">Please sign in to view private songs</p>
+            <h1 className="text-4xl font-bold mb-4">Incognito Song</h1>
+            <p className="text-zinc-600 dark:text-zinc-400 mb-8">Please sign in to view incognito songs</p>
             <Link
               to="/"
               className="inline-block py-3 px-6 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all"
@@ -174,7 +174,7 @@ function EphemeralSong() {
               </div>
               <h2 className="text-2xl font-bold mb-2">Song Not Found</h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                This private song may have expired or doesn't exist.
+                This incognito song may have expired or doesn't exist.
               </p>
               <Link
                 to="/studio"
@@ -191,9 +191,9 @@ function EphemeralSong() {
               <div className="w-20 h-20 bg-zinc-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mx-auto mb-6">
                 <span className="text-4xl">⏰</span>
               </div>
-              <h2 className="text-2xl font-bold mb-2">This private song has expired</h2>
+              <h2 className="text-2xl font-bold mb-2">This incognito song has expired</h2>
               <p className="text-zinc-600 dark:text-zinc-400 mb-6">
-                Private songs are only available for 1 hour and have been permanently deleted.
+                Incognito songs are only available for 1 hour and have been permanently deleted.
               </p>
               <Link
                 to="/studio"
@@ -213,7 +213,7 @@ function EphemeralSong() {
                   <span className="text-2xl">⚠️</span>
                   <div className="flex-1">
                     <h3 className="font-semibold text-amber-800 dark:text-amber-400">
-                      Private Mode - Download Required
+                      Incognito Mode - Download Required
                     </h3>
                     <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
                       This song is not saved to your library. Download before{' '}
@@ -250,7 +250,7 @@ function EphemeralSong() {
                   ← Back to Studio
                 </Link>
                 <h1 className="text-3xl md:text-4xl font-bold mb-2">
-                  {hasSessionData && data?.originalIdea ? data.originalIdea : 'Private Song'}
+                  {hasSessionData && data?.originalIdea ? data.originalIdea : 'Incognito Song'}
                 </h1>
                 <div className="flex items-center gap-3">
                   <p className="text-zinc-500 dark:text-zinc-500">
@@ -266,7 +266,7 @@ function EphemeralSong() {
                     </span>
                   )}
                   <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                    Private
+                    Incognito
                   </span>
                 </div>
               </div>
@@ -282,7 +282,7 @@ function EphemeralSong() {
                       </div>
                     </div>
                     <div>
-                      <h3 className="font-semibold text-lg">Creating your private song...</h3>
+                      <h3 className="font-semibold text-lg">Creating your incognito song...</h3>
                       <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
                         This usually takes 1-2 minutes
                       </p>
@@ -391,7 +391,7 @@ function EphemeralSong() {
               {/* Info Footer */}
               <div className="pt-8 border-t border-zinc-200 dark:border-zinc-800">
                 <p className="text-sm text-zinc-500 dark:text-zinc-500">
-                  Private songs appear in your library but are automatically deleted after 1 hour.
+                  Incognito songs appear in your library but are automatically deleted after 1 hour.
                 </p>
               </div>
             </div>

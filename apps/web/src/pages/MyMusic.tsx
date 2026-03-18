@@ -48,7 +48,7 @@ function MyMusic() {
       const link = document.createElement('a')
       link.href = url
       link.download = gen.isEphemeral
-        ? `private-song-${gen.id}.mp3`
+        ? `incognito-song-${gen.id}.mp3`
         : `${gen.name?.trim() || gen.prompt || 'makemusic'}.mp3`
       document.body.appendChild(link)
       link.click()
@@ -285,7 +285,7 @@ function MyMusic() {
                             )}
                             {gen.isEphemeral && (
                               <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
-                                Private
+                                Incognito
                               </span>
                             )}
                             {gen.isEphemeral && gen.expiresAt && (
@@ -294,8 +294,8 @@ function MyMusic() {
                               </span>
                             )}
                           </div>
-                          <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt || 'Private Song'}>
-                            {gen.name || gen.prompt || 'Private Song'}
+                          <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt || 'Incognito Song'}>
+                            {gen.name || gen.prompt || 'Incognito Song'}
                           </h3>
                         </div>
                         <div className="flex items-center gap-1">

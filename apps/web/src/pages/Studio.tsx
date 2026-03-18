@@ -560,7 +560,7 @@ function Studio() {
                             onChange={(e) => setEphemeral(e.target.checked)}
                             className="w-4 h-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-500"
                           />
-                          <span className="text-sm text-zinc-600 dark:text-zinc-400">Private mode (don't save to library)</span>
+                          <span className="text-sm text-zinc-600 dark:text-zinc-400">Incognito mode (don't save to library)</span>
                         </label>
                         <div className="group relative">
                           <svg className="w-4 h-4 text-zinc-400 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor">

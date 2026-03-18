@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Show } from '@clerk/react'
+import { Show, useAuth } from '@clerk/react'
 import { Link, useParams } from 'react-router'
 import { registerAudioElement } from '../lib/audioManager.ts'
 import { useApi } from '../hooks/useApi'
@@ -26,6 +26,7 @@ interface GenerationStatus {
 
 function EphemeralSong() {
   const { id } = useParams<{ id: string }>()
+  const { isLoaded } = useAuth()
   const { fetchWithAuth } = useApi()
   
   const [data, setData] = useState<EphemeralData | null>(null)
@@ -35,9 +36,9 @@ function EphemeralSong() {
   const [error, setError] = useState('')
   const [polling, setPolling] = useState(false)
 
-  // Load data on mount
+  // Load data on mount - wait for auth to be ready first
   useEffect(() => {
-    if (!id) return
+    if (!id || !isLoaded) return
     
     // Try to load lyrics/prompt from sessionStorage (for display only)
     const songs = JSON.parse(sessionStorage.getItem('ephemeral-songs') || '{}')
@@ -53,7 +54,7 @@ function EphemeralSong() {
     
     // Always fetch status from server (includes audioUrl)
     fetchStatus()
-  }, [id])
+  }, [id, isLoaded])
 
   const fetchStatus = async () => {
     if (!id) return

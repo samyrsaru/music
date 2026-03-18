@@ -122,8 +122,11 @@ app.post('/generate', async (c) => {
     }
 
     // Use the unified webhook endpoint for all generations
-    const baseUrl = process.env.REPLICATE_WEBHOOK_URL || c.req.url.replace('/api/ephemeral/generate', '')
-    const webhookUrl = `${baseUrl}/api/webhooks/replicate`
+    // If REPLICATE_WEBHOOK_URL is set and includes the webhook path, use it directly
+    // Otherwise, construct it from the request URL
+    const webhookUrl = process.env.REPLICATE_WEBHOOK_URL?.includes('/api/webhooks/replicate') 
+      ? process.env.REPLICATE_WEBHOOK_URL
+      : `${process.env.REPLICATE_WEBHOOK_URL || c.req.url.replace('/api/ephemeral/generate', '')}/api/webhooks/replicate`
 
     console.log(`🔗 [EPHEMERAL] Webhook URL: ${webhookUrl}`)
 

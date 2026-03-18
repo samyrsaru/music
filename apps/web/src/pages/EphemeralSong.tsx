@@ -102,7 +102,38 @@ function EphemeralSong() {
     })
   }
 
+  const [isDownloading, setIsDownloading] = useState(false)
 
+  const handleDownload = async () => {
+    if (!status?.audioUrl || !id) return
+    
+    setIsDownloading(true)
+    try {
+      // Fetch the audio file client-side
+      const response = await fetch(status.audioUrl)
+      if (!response.ok) throw new Error('Failed to fetch audio')
+      
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create a temporary link and trigger download
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `private-song-${id}.mp3`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      
+      // Clean up the object URL
+      window.URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Download failed:', err)
+      // Fallback: open in new tab
+      window.open(status.audioUrl, '_blank')
+    } finally {
+      setIsDownloading(false)
+    }
+  }
 
   // Determine current state
   const isExpired = status?.isExpired
@@ -321,18 +352,25 @@ function EphemeralSong() {
                     }}
                   />
 
-                  <a
-                    href={status.audioUrl}
-                    download={`private-song-${id}.mp3`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-4 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
+                  <button
+                    onClick={handleDownload}
+                    disabled={isDownloading}
+                    className="w-full py-4 bg-green-500 hover:bg-green-600 disabled:bg-green-400 text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download MP3
-                  </a>
+                    {isDownloading ? (
+                      <>
+                        <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                        Downloading...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download MP3
+                      </>
+                    )}
+                  </button>
                 </>
               )}
 

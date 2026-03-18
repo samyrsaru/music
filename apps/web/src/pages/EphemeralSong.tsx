@@ -89,7 +89,9 @@ function EphemeralSong() {
   }
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr + 'Z').toLocaleString(undefined, {
+    // Handle both ISO8601 format (with Z) and old SQLite format (without Z)
+    const isoStr = dateStr.endsWith('Z') ? dateStr : dateStr + 'Z'
+    return new Date(isoStr).toLocaleString(undefined, {
       month: 'long',
       day: 'numeric',
       year: 'numeric',

@@ -117,9 +117,9 @@ app.post('/generate', async (c) => {
       prompt: prompt || 'pop music'
     }
 
-    // Always use the ephemeral-specific webhook endpoint
-    // Don't use REPLICATE_WEBHOOK_URL as it might point to the generations webhook
-    const webhookUrl = `${c.req.url.replace('/generate', '')}/webhook`
+    // Use the unified webhook endpoint
+    const webhookUrl = process.env.REPLICATE_WEBHOOK_URL ||
+      `${c.req.url.replace('/api/ephemeral/generate', '')}/api/webhooks/replicate`
 
     console.log(`🔗 [EPHEMERAL] Using webhook URL: ${webhookUrl}`)
 
@@ -194,101 +194,6 @@ app.get('/status/:id', async (c) => {
     expiresAt: expiresAt.toISOString(),
     isExpired
   })
-})
-
-// Webhook endpoint for ephemeral generations
-app.post('/webhook', async (c) => {
-  const payload = await c.req.json()
-  
-  console.log(`🔔 [EPHEMERAL WEBHOOK] Received:`, JSON.stringify(payload, null, 2))
-  
-  const { id: replicateId, status: replicateStatus, output } = payload
-  
-  if (!replicateId) {
-    console.error(`❌ [EPHEMERAL WEBHOOK] Missing prediction ID`)
-    return c.json({ error: 'Missing prediction ID' }, 400)
-  }
-
-  // Find the ephemeral generation by replicate ID
-  const generation = db.prepare(`
-    SELECT * FROM ephemeral_generations WHERE replicateId = ?
-  `).get(replicateId) as any
-
-  if (!generation) {
-    console.log(`ℹ️ [EPHEMERAL WEBHOOK] Generation not found for replicateId: ${replicateId} (might be a regular generation)`)
-    return c.json({ error: 'Generation not found' }, 404)
-  }
-
-  if (replicateStatus === 'succeeded') {
-    try {
-      // Extract audio URL from output
-      let audioUrl: string | null = null
-      
-      if (typeof output === 'string') {
-        audioUrl = output
-      } else if (Array.isArray(output) && output.length > 0) {
-        audioUrl = String(output[0])
-      } else if (output && typeof output === 'object') {
-        if (output.url) {
-          audioUrl = typeof output.url === 'function' ? output.url() : String(output.url)
-        } else if (output.output) {
-          if (Array.isArray(output.output) && output.output.length > 0) {
-            audioUrl = String(output.output[0])
-          } else {
-            audioUrl = String(output.output)
-          }
-        } else if (output.audio) {
-          audioUrl = String(output.audio)
-        } else {
-          const values = Object.values(output)
-          const urlValue = values.find(v => typeof v === 'string' && (v.startsWith('http://') || v.startsWith('https://')))
-          if (urlValue) audioUrl = urlValue as string
-        }
-      }
-
-      if (!audioUrl) {
-        throw new Error('No audio URL in webhook payload')
-      }
-
-      console.log(`✅ [EPHEMERAL WEBHOOK] Generation completed! URL: ${audioUrl.substring(0, 60)}...`)
-
-      // Update generation status - NO R2 UPLOAD for ephemeral!
-      db.prepare(`
-        UPDATE ephemeral_generations 
-        SET status = 'completed', 
-            audioUrl = ?
-        WHERE id = ?
-      `).run(audioUrl, generation.id)
-
-      console.log(`💾 [EPHEMERAL WEBHOOK] Generation ${generation.id} marked as completed`)
-
-    } catch (error: any) {
-      console.error(`❌ [EPHEMERAL WEBHOOK] Failed to process:`, error.message)
-      
-      db.prepare(`
-        UPDATE ephemeral_generations 
-        SET status = 'failed'
-        WHERE id = ?
-      `).run(generation.id)
-    }
-  } else if (replicateStatus === 'failed' || replicateStatus === 'canceled') {
-    console.error(`❌ [EPHEMERAL WEBHOOK] Generation failed: ${replicateStatus}`)
-    
-    db.prepare(`
-      UPDATE ephemeral_generations 
-      SET status = 'failed'
-      WHERE id = ?
-    `).run(generation.id)
-    
-    // Refund credits
-    const modelConfig = getModelConfig(generation.model || DEFAULT_MODEL)
-    db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + ? WHERE clerkUserId = ?')
-      .run(modelConfig.cost, generation.clerkUserId)
-    
-    console.log(`💰 [EPHEMERAL WEBHOOK] ${modelConfig.cost} credits refunded`)
-  }
-
-  return c.json({ success: true })
 })
 
 export default app

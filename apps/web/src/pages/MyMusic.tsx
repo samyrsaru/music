@@ -384,7 +384,11 @@ function MyMusic() {
 
                           <div className="flex gap-3">
                             <button
-                              onClick={(e) => handleDownload(gen, e)}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                handleDownload(gen, e)
+                              }}
                               disabled={downloadingId === gen.id}
                               className="w-full py-2.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium rounded-lg hover:bg-zinc-200 dark:hover:bg-zinc-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all text-center"
                             >

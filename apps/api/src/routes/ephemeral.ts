@@ -117,8 +117,9 @@ app.post('/generate', async (c) => {
       prompt: prompt || 'pop music'
     }
 
-    const webhookUrl = process.env.REPLICATE_WEBHOOK_URL || 
-      `${c.req.url.replace('/generate', '')}/webhook`
+    // Always use the ephemeral-specific webhook endpoint
+    // Don't use REPLICATE_WEBHOOK_URL as it might point to the generations webhook
+    const webhookUrl = `${c.req.url.replace('/generate', '')}/webhook`
 
     console.log(`🔗 [EPHEMERAL] Using webhook URL: ${webhookUrl}`)
 

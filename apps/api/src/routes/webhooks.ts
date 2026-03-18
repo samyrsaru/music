@@ -13,6 +13,7 @@ console.log('Webhook secret exists:', !!process.env.POLAR_WEBHOOK_SECRET)
 console.log('CLERK_WEBHOOK_SECRET exists:', !!process.env.CLERK_WEBHOOK_SECRET)
 
 // Replicate webhook - called when music generation completes
+// Handles both regular generations and ephemeral (private mode) generations
 app.post('/replicate', async (c) => {
   const body = await c.req.json()
   
@@ -20,7 +21,7 @@ app.post('/replicate', async (c) => {
     const { id, status, output } = body
     
     if (status === 'succeeded') {
-      // Find generation by replicate ID
+      // First check regular generations
       const generation = db.prepare('SELECT * FROM generations WHERE replicateId = ?')
         .get(id) as any
       
@@ -54,9 +55,35 @@ app.post('/replicate', async (c) => {
         `).run(audioUrl, r2Key, id)
         
         console.log(`✅ Generation ${generation.id} completed: ${r2Key || audioUrl}`)
+        return c.json({ received: true })
       }
-    } else if (status === 'failed') {
-      // Mark as failed and refund credit
+      
+      // Check ephemeral generations (private mode)
+      const ephemeralGen = db.prepare('SELECT * FROM ephemeral_generations WHERE replicateId = ?')
+        .get(id) as any
+      
+      if (ephemeralGen) {
+        // Get audio URL from Replicate output
+        const audioUrl = Array.isArray(output) ? output[0] : output
+        
+        // For ephemeral generations, we DON'T upload to R2 - just store the Replicate URL
+        // The URL is temporary (expires in ~1 hour)
+        db.prepare(`
+          UPDATE ephemeral_generations 
+          SET status = 'completed', audioUrl = ?
+          WHERE replicateId = ?
+        `).run(audioUrl, id)
+        
+        console.log(`✅ Ephemeral generation ${ephemeralGen.id} completed: ${audioUrl.substring(0, 60)}...`)
+        return c.json({ received: true })
+      }
+      
+      // If we get here, the generation wasn't found in either table
+      console.warn(`⚠️  Webhook received for unknown replicateId: ${id}`)
+      return c.json({ received: true, warning: 'Generation not found' })
+      
+    } else if (status === 'failed' || status === 'canceled') {
+      // Check regular generations first
       const generation = db.prepare('SELECT * FROM generations WHERE replicateId = ?')
         .get(id) as any
       
@@ -70,7 +97,29 @@ app.post('/replicate', async (c) => {
           .run(generation.clerkUserId)
         
         console.log(`❌ Generation ${generation.id} failed, credit refunded`)
+        return c.json({ received: true })
       }
+      
+      // Check ephemeral generations
+      const ephemeralGen = db.prepare('SELECT * FROM ephemeral_generations WHERE replicateId = ?')
+        .get(id) as any
+      
+      if (ephemeralGen) {
+        db.prepare(`
+          UPDATE ephemeral_generations SET status = 'failed' WHERE replicateId = ?
+        `).run(id)
+        
+        // Refund credit for ephemeral too
+        const modelCost = ephemeralGen.model === 'minimax/music-2.5' ? 50 : 10
+        db.prepare('UPDATE users SET lifetime_credits = lifetime_credits + ? WHERE clerkUserId = ?')
+          .run(modelCost, ephemeralGen.clerkUserId)
+        
+        console.log(`❌ Ephemeral generation ${ephemeralGen.id} failed, ${modelCost} credits refunded`)
+        return c.json({ received: true })
+      }
+      
+      console.warn(`⚠️  Failed webhook received for unknown replicateId: ${id}`)
+      return c.json({ received: true, warning: 'Generation not found' })
     }
     
     return c.json({ received: true })

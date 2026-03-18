@@ -646,6 +646,7 @@ app.get('/', async (c) => {
   const auth = getAuth(c)
   if (!auth?.userId) return c.json({ error: 'Unauthorized' }, 401)
 
+  // Get regular generations
   const generations = db.prepare(`
     SELECT id, lyrics, prompt, name, audioUrl, r2Key, status, favorite, model, createdAt 
     FROM generations 
@@ -653,7 +654,40 @@ app.get('/', async (c) => {
     ORDER BY createdAt DESC
   `).all(auth.userId) as any[]
 
-  // Generate signed URLs for each generation
+  // Get ephemeral (private) generations - exclude expired ones (> 1 hour old)
+  const ephemeralGenerations = db.prepare(`
+    SELECT id, audioUrl, model, createdAt, status
+    FROM ephemeral_generations 
+    WHERE clerkUserId = ? 
+    AND createdAt > datetime('now', '-1 hour')
+    ORDER BY createdAt DESC
+  `).all(auth.userId) as any[]
+
+  // Transform ephemeral generations to match the format
+  const transformedEphemeral = ephemeralGenerations.map((gen) => {
+    // Calculate expiration
+    const createdAt = new Date(gen.createdAt + (gen.createdAt.includes('Z') ? '' : 'Z'))
+    const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000)
+    const now = new Date()
+    const isExpired = now > expiresAt
+    
+    return {
+      id: gen.id,
+      lyrics: '', // Not stored for ephemeral
+      prompt: '', // Not stored for ephemeral
+      name: 'Private Song',
+      audioUrl: gen.audioUrl,
+      r2Key: null,
+      status: isExpired ? 'expired' : gen.status,
+      favorite: 0,
+      model: gen.model,
+      createdAt: gen.createdAt,
+      isEphemeral: true,
+      expiresAt: expiresAt.toISOString()
+    }
+  }).filter((gen: any) => gen.status !== 'expired') // Filter out expired
+
+  // Generate signed URLs for regular generations
   const transformedGenerations = await Promise.all(
     generations.map(async (gen) => {
       let audioUrl = gen.audioUrl
@@ -673,14 +707,23 @@ app.get('/', async (c) => {
       return {
         ...gen,
         audioUrl,
-        r2Key: undefined // Don't expose the key
+        r2Key: undefined, // Don't expose the key
+        isEphemeral: false
       }
     })
   )
 
-  console.log(`📚 [LIBRARY] Returning ${transformedGenerations.length} generations for user: ${auth.userId.substring(0, 8)}...`)
+  // Combine both lists
+  const allGenerations = [...transformedGenerations, ...transformedEphemeral]
+  
+  // Sort by createdAt descending
+  allGenerations.sort((a: any, b: any) => {
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
 
-  return c.json({ generations: transformedGenerations })
+  console.log(`📚 [LIBRARY] Returning ${allGenerations.length} generations (${transformedGenerations.length} regular, ${transformedEphemeral.length} ephemeral) for user: ${auth.userId.substring(0, 8)}...`)
+
+  return c.json({ generations: allGenerations })
 })
 
 // Get generation by ID

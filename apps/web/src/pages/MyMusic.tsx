@@ -14,6 +14,8 @@ interface Generation {
   favorite: number
   model?: string
   createdAt: string
+  isEphemeral?: boolean
+  expiresAt?: string
 }
 
 const API_URL = import.meta.env.VITE_API_URL || ''
@@ -32,6 +34,11 @@ function MyMusic() {
 
   const filteredGenerations = generations
     .filter(gen => {
+      // Ephemeral songs don't have lyrics/prompt stored, so skip search for them
+      if (gen.isEphemeral) {
+        const matchesFavorite = showFavoritesOnly ? gen.favorite === 1 : true
+        return matchesFavorite
+      }
       const matchesSearch = gen.prompt.toLowerCase().includes(search.toLowerCase()) ||
         gen.lyrics.toLowerCase().includes(search.toLowerCase())
       const matchesFavorite = showFavoritesOnly ? gen.favorite === 1 : true
@@ -229,14 +236,14 @@ function MyMusic() {
             {!loading && filteredGenerations.length > 0 && (
               <div className="grid gap-6 md:grid-cols-2">
                 {filteredGenerations.map((gen) => (
-                  <div 
+                  <div
                     key={gen.id}
                     className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl overflow-hidden hover:border-green-300 dark:hover:border-green-700 transition-all shadow-sm hover:shadow-md"
                   >
-                    <Link to={`/song/${gen.id}`} className="block p-6 space-y-4">
+                    <Link to={gen.isEphemeral ? `/ephemeral/${gen.id}` : `/song/${gen.id}`} className="block p-6 space-y-4">
                         <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <p className="text-xs text-zinc-500 dark:text-zinc-500 uppercase tracking-wide">
                               {formatDate(gen.createdAt)}
                             </p>
@@ -245,47 +252,61 @@ function MyMusic() {
                                 Pro
                               </span>
                             )}
+                            {gen.isEphemeral && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">
+                                Private
+                              </span>
+                            )}
+                            {gen.isEphemeral && gen.expiresAt && (
+                              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300">
+                                Expires {new Date(gen.expiresAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                              </span>
+                            )}
                           </div>
-                          <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt}>
-                            {gen.name || gen.prompt}
+                          <h3 className="font-semibold text-lg leading-tight" title={gen.name || gen.prompt || 'Private Song'}>
+                            {gen.name || gen.prompt || 'Private Song'}
                           </h3>
                         </div>
                         <div className="flex items-center gap-1">
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              toggleFavorite(gen.id)
-                            }}
-                            disabled={togglingFavorite === gen.id}
-                            className={`p-2 rounded-lg transition-all ${
-                              gen.favorite
-                                ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
-                                : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
-                            }`}
-                            title={gen.favorite ? 'Remove from favorites' : 'Add to favorites'}
-                          >
-                            {togglingFavorite === gen.id ? (
-                              <div className="animate-spin rounded-full h-5 w-5 border-2 border-red-500 border-t-transparent" />
-                            ) : (
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill={gen.favorite ? 'currentColor' : 'none'} stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
-                              </svg>
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              setDeleteConfirm(gen.id)
-                            }}
-                            className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
-                            title="Delete track"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {!gen.isEphemeral && (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  toggleFavorite(gen.id)
+                                }}
+                                disabled={togglingFavorite === gen.id}
+                                className={`p-2 rounded-lg transition-all ${
+                                  gen.favorite
+                                    ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30'
+                                    : 'text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30'
+                                }`}
+                                title={gen.favorite ? 'Remove from favorites' : 'Add to favorites'}
+                              >
+                                {togglingFavorite === gen.id ? (
+                                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-red-500 border-t-transparent" />
+                                ) : (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill={gen.favorite ? 'currentColor' : 'none'} stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" />
+                                  </svg>
+                                )}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  setDeleteConfirm(gen.id)
+                                }}
+                                className="p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-all"
+                                title="Delete track"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
 
@@ -333,7 +354,7 @@ function MyMusic() {
                           <div className="flex gap-3">
                             <a
                               href={gen.audioUrl}
-                              download={`${gen.name?.trim() || gen.prompt || 'makemusic'}.mp3`}
+                              download={gen.isEphemeral ? `private-song-${gen.id}.mp3` : `${gen.name?.trim() || gen.prompt || 'makemusic'}.mp3`}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => {

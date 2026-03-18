@@ -181,9 +181,15 @@ app.get('/status/:id', async (c) => {
   }
 
   // Calculate expiration time (1 hour from creation)
-  const createdAt = new Date(generation.createdAt)
+  // SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" in UTC
+  // We need to append 'Z' to treat it as UTC, then convert to local time for comparison
+  const createdAtStr = generation.createdAt + 'Z'
+  const createdAt = new Date(createdAtStr)
   const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000)
-  const isExpired = new Date() > expiresAt
+  const now = new Date()
+  const isExpired = now > expiresAt
+  
+  console.log(`[EPHEMERAL STATUS] id=${id}, createdAt=${generation.createdAt}, expiresAt=${expiresAt.toISOString()}, now=${now.toISOString()}, isExpired=${isExpired}`)
 
   return c.json({
     id: generation.id,

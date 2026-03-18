@@ -282,10 +282,18 @@ Respond with only the title text, nothing else.`
     }
 
     // Use the unified webhook endpoint
-    const webhookUrl = process.env.REPLICATE_WEBHOOK_URL ||
-      `${c.req.url.replace('/api/generations/generate', '')}/api/webhooks/replicate`
+    // In production, we need the public URL. Try to get it from headers or env var.
+    const protocol = c.req.header('x-forwarded-proto') || 'https'
+    const host = c.req.header('host') || c.req.header('x-forwarded-host')
+    const baseUrl = process.env.REPLICATE_WEBHOOK_URL ? 
+      process.env.REPLICATE_WEBHOOK_URL.replace('/api/webhooks/replicate', '') :
+      (host ? `${protocol}://${host}` : `${c.req.url.replace('/api/generations/generate', '')}`)
+    const webhookUrl = `${baseUrl}/api/webhooks/replicate`
 
-    console.log(`🔗 [WEBHOOK] Using webhook URL: ${webhookUrl}`)
+    console.log(`🔗 [WEBHOOK] Protocol: ${protocol}`)
+    console.log(`🔗 [WEBHOOK] Host: ${host}`)
+    console.log(`🔗 [WEBHOOK] Base URL: ${baseUrl}`)
+    console.log(`🔗 [WEBHOOK] Webhook URL: ${webhookUrl}`)
 
     // Start the prediction asynchronously with webhook using the selected model
     const prediction = await replicate.predictions.create({

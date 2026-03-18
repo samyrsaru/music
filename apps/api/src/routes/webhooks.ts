@@ -17,6 +17,8 @@ console.log('CLERK_WEBHOOK_SECRET exists:', !!process.env.CLERK_WEBHOOK_SECRET)
 app.post('/replicate', async (c) => {
   const body = await c.req.json()
   
+  console.log(`🔔 [WEBHOOK] Received Replicate webhook:`, JSON.stringify(body, null, 2))
+  
   try {
     const { id, status, output } = body
     

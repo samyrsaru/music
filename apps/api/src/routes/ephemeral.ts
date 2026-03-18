@@ -106,10 +106,14 @@ app.post('/generate', async (c) => {
 
   try {
     // Create pending ephemeral generation record (NO lyrics/prompt stored!)
+    // Use ISO8601 format with explicit UTC timezone
+    const now = new Date()
+    const createdAt = now.toISOString() // This gives us "2026-03-18T12:36:38.000Z"
+    
     db.prepare(`
       INSERT INTO ephemeral_generations (id, clerkUserId, status, model, createdAt)
-      VALUES (?, ?, 'pending', ?, datetime('now'))
-    `).run(generationId, auth.userId, modelConfig.id)
+      VALUES (?, ?, 'pending', ?, ?)
+    `).run(generationId, auth.userId, modelConfig.id, createdAt)
 
     // Start async generation with webhook
     const input = {
@@ -181,15 +185,21 @@ app.get('/status/:id', async (c) => {
   }
 
   // Calculate expiration time (1 hour from creation)
-  // SQLite stores CURRENT_TIMESTAMP as "YYYY-MM-DD HH:MM:SS" in UTC
-  // We need to append 'Z' to treat it as UTC, then convert to local time for comparison
-  const createdAtStr = generation.createdAt + 'Z'
+  // Handle both old format ("YYYY-MM-DD HH:MM:SS") and new format (ISO8601 with Z)
+  let createdAtStr = generation.createdAt
+  
+  // If it's in SQLite format without timezone, assume it's UTC
+  if (!createdAtStr.includes('T') && !createdAtStr.endsWith('Z')) {
+    // Convert "2026-03-18 12:36:38" to "2026-03-18T12:36:38Z"
+    createdAtStr = createdAtStr.replace(' ', 'T') + 'Z'
+  }
+  
   const createdAt = new Date(createdAtStr)
   const expiresAt = new Date(createdAt.getTime() + 60 * 60 * 1000)
   const now = new Date()
   const isExpired = now > expiresAt
   
-  console.log(`[EPHEMERAL STATUS] id=${id}, createdAt=${generation.createdAt}, expiresAt=${expiresAt.toISOString()}, now=${now.toISOString()}, isExpired=${isExpired}`)
+  console.log(`[EPHEMERAL STATUS] id=${id}, rawCreatedAt=${generation.createdAt}, parsedCreatedAt=${createdAt.toISOString()}, expiresAt=${expiresAt.toISOString()}, now=${now.toISOString()}, isExpired=${isExpired}`)
 
   return c.json({
     id: generation.id,

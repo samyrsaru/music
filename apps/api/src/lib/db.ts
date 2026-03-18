@@ -183,10 +183,19 @@ db.exec(`
     replicateId TEXT UNIQUE,
     status TEXT DEFAULT 'pending',
     audioUrl TEXT,
+    model TEXT DEFAULT 'minimax/music-1.5',
     createdAt TEXT DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (clerkUserId) REFERENCES users(clerkUserId)
   )
 `)
+
+// Migration: Add model column if it doesn't exist (for existing databases)
+try {
+  db.exec(`ALTER TABLE ephemeral_generations ADD COLUMN model TEXT DEFAULT 'minimax/music-1.5'`)
+  console.log('✅ Migration: Added model column to ephemeral_generations table')
+} catch (err) {
+  // Column already exists, ignore error
+}
 
 // Create index for cleanup queries
 db.exec(`

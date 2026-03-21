@@ -39,7 +39,7 @@ function Home() {
     {
       icon: '🎵',
       title: 'Idea to Song',
-      description: 'Start with just an idea or concept. Our AI generates lyrics, selects style, and creates complete songs.'
+      description: 'Start with just an idea or concept. Our AI generates lyrics, selects style, and creates complete songs instantly.'
     },
     {
       icon: '🎨',
@@ -199,13 +199,12 @@ function Home() {
               <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6">
                 Create{' '}
                 <span className="bg-gradient-to-r from-green-500 to-emerald-400 bg-clip-text text-transparent">
-                  Music
+                  AI Music
                 </span>{' '}
                 in Seconds
               </h1>
-
               <p className="text-xl md:text-2xl text-zinc-600 dark:text-zinc-400 leading-relaxed mb-10 max-w-2xl mx-auto">
-                Start with an idea and we'll transform it into complete songs with lyrics and style. Just describe your vision and we'll handle the rest.
+                Transform your ideas into complete songs with AI-generated lyrics and style. Just describe your vision and we'll handle the rest.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -244,7 +243,7 @@ function Home() {
                 Everything You Need to Create Music
               </h2>
               <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                Professional-grade AI music generation made simple. No musical background required.
+                Professional-grade music generation made simple. No musical background required.
               </p>
             </div>
 
@@ -275,7 +274,7 @@ function Home() {
                 How It Works
               </h2>
               <p className="text-lg text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-                Creating your first AI-generated song is easier than you think.
+                Creating your first song is easier than you think.
               </p>
             </div>
 
@@ -537,6 +536,38 @@ function Home() {
                   <SignIn routing="hash" />
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* SEO Content Section */}
+        <section className="px-6 py-16 bg-zinc-50 dark:bg-zinc-900">
+          <div className="max-w-4xl mx-auto">
+            <div className="prose dark:prose-invert max-w-none">
+              <h2 className="text-2xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">
+                Create Music with AI
+              </h2>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+                Sound Like a Hero transforms your ideas into complete songs using artificial intelligence. Simply describe what you want, and our system generates original music with lyrics, instrumentation, and professional production quality.
+              </p>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
+                How It Works
+              </h3>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+                Our technology analyzes your text prompts to understand mood, style, and intent. It then creates unique compositions by generating lyrics, selecting instruments, and arranging melodies that match your vision.
+              </p>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
+                Why Sound Like a Hero?
+              </h3>
+              <p className="text-zinc-600 dark:text-zinc-400 mb-6">
+                Unlike complex music production software, no musical knowledge is required. Simply describe what you want, and get professional-quality music in seconds. Perfect for content creators, musicians, filmmakers, and anyone who needs original songs.
+              </p>
+              <h3 className="text-xl font-semibold mb-3 text-zinc-900 dark:text-zinc-100">
+                Free to Start
+              </h3>
+              <p className="text-zinc-600 dark:text-zinc-400">
+                Begin with 50 free credits on signup — enough for 5 songs. Upgrade to our Treble plan for 600 credits monthly when you're ready to create more.
+              </p>
             </div>
           </div>
         </section>
